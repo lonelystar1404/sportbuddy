@@ -1,0 +1,945 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+</head>
+<body>
+<title>SportBuddy</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Public+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+/* Layout: a court-side clipboard. Header with location + name, then calendar rail beside the game sheet; stacks on phones. */
+:root {
+  --bg: #f3f5f1;
+  --surface: #ffffff;
+  --ink: #15233b;
+  --muted: #5a6577;
+  --line: #d9ded6;
+  --court: #1d5fbf;
+  --court-ink: #ffffff;
+  --ball: #d8e83a;
+  --ball-ink: #1b2a0a;
+  --soft: #e8eef8;
+  --ok: #2f7d4a;
+  --warn: #a2620c;
+  --bad: #b3352b;
+  --font-display: "Barlow Condensed", "Arial Narrow", "Roboto Condensed", sans-serif;
+  --font-body: "Public Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-data: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  --r: 10px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0f1622; --surface: #172131; --ink: #e7ecf3; --muted: #9aa6b8; --line: #2a3648;
+    --court: #5b93e6; --court-ink: #0b1220; --ball: #d8e83a; --ball-ink: #1b2a0a; --soft: #1d2a40;
+    --ok: #6cc28a; --warn: #e5a54a; --bad: #ef7b70; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0f1622; --surface: #172131; --ink: #e7ecf3; --muted: #9aa6b8; --line: #2a3648;
+  --court: #5b93e6; --court-ink: #0b1220; --ball: #d8e83a; --ball-ink: #1b2a0a; --soft: #1d2a40;
+  --ok: #6cc28a; --warn: #e5a54a; --bad: #ef7b70; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 15px; line-height: 1.5; }
+button, input, select, textarea { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--court); outline-offset: 2px; }
+.wrap { max-width: 1120px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+
+header.top { background: var(--ink); color: var(--bg); }
+header.top .wrap { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px; padding-block: 14px; }
+.brand { font-family: var(--font-display); font-weight: 800; font-size: 30px; letter-spacing: .01em; line-height: 1; display: flex; align-items: center; gap: 10px; margin: 0; }
+.brand svg { flex: none; }
+.brand small { display: block; font-family: var(--font-body); font-weight: 500; font-size: 12px; letter-spacing: .02em; opacity: .7; margin-top: 3px; }
+.top-tools { display: flex; flex-wrap: wrap; gap: 8px; margin-left: auto; align-items: center; }
+.pill { display: inline-flex; align-items: center; gap: 6px; border: 1px solid color-mix(in srgb, var(--bg) 30%, transparent); background: transparent; color: var(--bg); border-radius: 999px; padding: 6px 12px; cursor: pointer; font-size: 13px; max-width: 100%; }
+.pill:hover { background: color-mix(in srgb, var(--bg) 12%, transparent); }
+.pill span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 220px; }
+
+nav.tabs { border-bottom: 1px solid var(--line); background: var(--surface); position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--ink); }
+nav.tabs .wrap { display: flex; gap: 4px; overflow-x: auto; }
+.tab { border: 0; background: none; padding: 12px 14px; font-family: var(--font-display); font-weight: 700; font-size: 19px; letter-spacing: .02em; color: var(--muted); border-bottom: 3px solid transparent; cursor: pointer; white-space: nowrap; }
+.tab[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--court); }
+
+main .wrap { padding-block: 20px 48px; }
+.banner { display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; background: var(--soft); border: 1px solid var(--line); border-radius: var(--r); padding: 12px 14px; margin-bottom: 18px; }
+.banner p { margin: 0; flex: 1 1 260px; min-width: 0; }
+.banner strong { display: block; }
+
+.sports { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 16px; }
+.chip { border: 1px solid var(--line); background: var(--surface); border-radius: 999px; padding: 5px 12px; cursor: pointer; font-size: 14px; }
+.chip[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+
+.layout { display: grid; grid-template-columns: 300px minmax(0, 1fr); gap: 24px; align-items: start; }
+@media (max-width: 820px) { .layout { grid-template-columns: minmax(0, 1fr); } }
+
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 14px; }
+.cal-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+.cal-head h2 { font-family: var(--font-display); font-size: 22px; margin: 0; }
+.icon-btn { border: 1px solid var(--line); background: var(--surface); border-radius: 8px; width: 34px; height: 34px; cursor: pointer; display: grid; place-items: center; }
+.cal { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; text-align: center; font-variant-numeric: tabular-nums; }
+.cal .dow { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); padding: 4px 0; }
+.day { position: relative; aspect-ratio: 1; max-width: 100%; border: 0; background: none; border-radius: 8px; cursor: pointer; font-size: 14px; display: grid; place-items: center; }
+.day:hover { background: var(--soft); }
+.day.out { color: var(--muted); opacity: .45; }
+.day.past { color: var(--muted); }
+.day.today { font-weight: 700; box-shadow: inset 0 0 0 1px var(--court); }
+.day.sel { background: var(--court); color: var(--court-ink); }
+.day .dot { position: absolute; bottom: 4px; left: 50%; transform: translateX(-50%); min-width: 6px; height: 6px; border-radius: 3px; background: var(--ball); box-shadow: 0 0 0 1px var(--ball-ink); }
+.cal-foot { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-top: 10px; font-size: 13px; color: var(--muted); }
+.linkish { border: 0; background: none; color: var(--court); cursor: pointer; padding: 0; text-decoration: underline; text-underline-offset: 2px; font-size: 13px; }
+
+.filters { display: grid; gap: 10px; margin-top: 14px; }
+label.f { display: grid; gap: 4px; font-size: 13px; color: var(--muted); }
+input[type=text], input[type=date], input[type=time], input[type=number], select, textarea {
+  width: 100%; border: 1px solid var(--line); background: var(--surface); border-radius: 8px; padding: 8px 10px; min-width: 0;
+}
+textarea { min-height: 70px; resize: vertical; }
+
+.list-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 8px; margin-bottom: 12px; }
+.list-head h2 { font-family: var(--font-display); font-size: 28px; margin: 0; text-wrap: balance; }
+.muted { color: var(--muted); }
+.games { display: grid; gap: 12px; }
+.game { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 14px 16px; display: grid; gap: 10px; min-width: 0; }
+.game.mine { border-color: var(--court); }
+.g-top { display: flex; gap: 14px; align-items: flex-start; }
+.when { flex: none; width: 62px; text-align: center; border-radius: 8px; background: var(--ink); color: var(--bg); padding: 6px 0 7px; font-variant-numeric: tabular-nums; }
+.when .m { font-size: 11px; text-transform: uppercase; letter-spacing: .1em; opacity: .8; }
+.when .d { font-family: var(--font-display); font-size: 28px; font-weight: 800; line-height: 1; }
+.when .w { font-size: 11px; opacity: .8; }
+.g-main { flex: 1; min-width: 0; }
+.g-title { font-family: var(--font-display); font-weight: 700; font-size: 22px; line-height: 1.15; margin: 0; overflow-wrap: anywhere; }
+.g-meta { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 13.5px; color: var(--muted); margin-top: 3px; }
+.g-meta b { color: var(--ink); font-weight: 600; }
+.mono { font-family: var(--font-data); font-size: 13px; }
+.tag { display: inline-block; font-size: 12px; padding: 1px 8px; border-radius: 999px; border: 1px solid var(--line); }
+.tag.open { background: var(--ball); color: var(--ball-ink); border-color: transparent; font-weight: 600; }
+.tag.full { background: var(--soft); }
+.tag.host { background: var(--court); color: var(--court-ink); border-color: transparent; }
+.tag.priv { background: var(--soft); border-color: var(--court); }
+.vis { border: 0; padding: 0; margin: 0; display: grid; gap: 8px; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); min-width: 0; }
+.vis legend { font-size: 13px; color: var(--muted); padding: 0; margin-bottom: 4px; }
+.opt { display: flex; gap: 10px; align-items: flex-start; border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; cursor: pointer; font-size: 13.5px; color: var(--muted); background: var(--surface); }
+.opt b { display: block; color: var(--ink); font-size: 14.5px; }
+.opt input { margin-top: 3px; accent-color: var(--court); }
+.opt:has(input:checked) { border-color: var(--court); box-shadow: 0 0 0 1px var(--court); }
+.requests { display: grid; gap: 6px; border: 1px dashed var(--court); border-radius: 8px; padding: 8px 10px; }
+.req { display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; font-size: 14px; }
+.req .btn { padding: 4px 10px; font-size: 13px; }
+.invite { display: flex; gap: 8px; }
+.invite input { flex: 1; min-width: 0; border: 1px solid var(--line); background: var(--soft); color: var(--ink); border-radius: 8px; padding: 8px 10px; font-family: var(--font-mono, monospace); font-size: 13px; }
+
+.roster { display: grid; gap: 6px; }
+.slots { display: flex; flex-wrap: wrap; gap: 4px; }
+.slot { width: 14px; height: 14px; border-radius: 50%; border: 1.5px solid var(--court); }
+.slot.on { background: var(--court); }
+.slot.bk { border-style: dashed; border-color: var(--muted); }
+.slot.bk.on { background: var(--muted); }
+.names { display: flex; flex-wrap: wrap; gap: 6px; font-size: 13.5px; }
+.who { display: inline-flex; align-items: center; gap: 4px; background: var(--soft); border-radius: 999px; padding: 2px 10px; }
+.who.me { box-shadow: inset 0 0 0 1.5px var(--court); }
+.who button { border: 0; background: none; cursor: pointer; color: var(--muted); padding: 0 0 0 2px; line-height: 1; font-size: 15px; }
+.lbl { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
+.notes { font-size: 14px; margin: 0; overflow-wrap: anywhere; white-space: pre-wrap; }
+.actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.btn { border: 1px solid var(--line); background: var(--surface); border-radius: 8px; padding: 8px 14px; cursor: pointer; font-weight: 600; font-size: 14px; }
+a.btn { text-decoration: none; color: var(--ink); display: inline-block; }
+.btn:hover { border-color: var(--muted); }
+.btn.primary { background: var(--court); color: var(--court-ink); border-color: var(--court); }
+.btn.ball { background: var(--ball); color: var(--ball-ink); border-color: var(--ball); }
+.btn.danger { color: var(--bad); }
+.btn[disabled] { opacity: .5; cursor: not-allowed; }
+.status { font-size: 13px; color: var(--muted); }
+
+.empty { text-align: center; padding: 36px 16px; border: 1.5px dashed var(--line); border-radius: var(--r); color: var(--muted); }
+.empty h3 { font-family: var(--font-display); font-size: 24px; color: var(--ink); margin: 0 0 6px; }
+
+form.host { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; max-width: 760px; }
+form.host .full { grid-column: 1 / -1; }
+@media (max-width: 560px) { form.host { grid-template-columns: minmax(0, 1fr); } }
+.check { display: flex; gap: 8px; align-items: center; font-size: 14px; }
+.hint { font-size: 12.5px; color: var(--muted); }
+
+.venues { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; }
+.venue { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 14px; display: grid; gap: 6px; align-content: start; min-width: 0; }
+.venue h3 { font-family: var(--font-display); font-size: 20px; margin: 0; line-height: 1.15; overflow-wrap: anywhere; }
+.venue .price { font-weight: 600; }
+.venue .price.free { color: var(--ok); }
+.venue .price.paid { color: var(--warn); }
+.venue a:not(.btn) { color: var(--court); }
+.venue .actions { margin-top: 4px; }
+.search-row { display: flex; flex-wrap: wrap; gap: 10px; align-items: end; margin-bottom: 16px; }
+.search-row > * { flex: 1 1 180px; min-width: 0; }
+.search-row .btn { flex: 0 0 auto; }
+
+.modal-bg { position: fixed; inset: 0; background: color-mix(in srgb, var(--ink) 55%, transparent); display: grid; place-items: center; z-index: 20; padding: 16px; }
+.modal { background: var(--surface); border-radius: 14px; padding: 20px; width: min(420px, 100%); display: grid; gap: 12px; }
+.modal h3 { font-family: var(--font-display); font-size: 24px; margin: 0; }
+.toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(16px + env(safe-area-inset-bottom, 0px)); background: var(--ink); color: var(--bg); padding: 10px 16px; border-radius: 10px; z-index: 30; font-size: 14px; max-width: calc(100% - 32px); }
+footer { font-size: 12.5px; color: var(--muted); padding-block: 0 32px; }
+@media (prefers-reduced-motion: no-preference) { .game, .venue { animation: rise .25s ease-out both; } @keyframes rise { from { transform: translateY(4px); } to { transform: none; } } }
+</style>
+
+<header class="top">
+  <div class="wrap">
+    <h1 class="brand">
+      <svg width="34" height="34" viewBox="0 0 34 34" aria-hidden="true"><circle cx="17" cy="17" r="15" fill="#d8e83a" stroke="#1b2a0a" stroke-width="1.5"/><g fill="#1b2a0a"><circle cx="12" cy="11" r="2"/><circle cx="21" cy="10" r="2"/><circle cx="25" cy="18" r="2"/><circle cx="17" cy="18" r="2"/><circle cx="9" cy="19" r="2"/><circle cx="13" cy="26" r="2"/><circle cx="21" cy="25" r="2"/></g></svg>
+      <span>SportBuddy<small>Find people to play with, nearby</small></span>
+    </h1>
+    <div class="top-tools">
+      <button class="pill" id="locBtn" type="button" title="Change location">
+        <svg width="14" height="14" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 2a7 7 0 0 0-7 7c0 5.2 7 13 7 13s7-7.8 7-13a7 7 0 0 0-7-7zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5z"/></svg>
+        <span id="locLabel">Set your location</span>
+      </button>
+      <button class="pill" id="nameBtn" type="button" title="Change your display name">
+        <svg width="14" height="14" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 12a5 5 0 1 0 0-10 5 5 0 0 0 0 10zm0 2c-4.4 0-8 2.2-8 5v3h16v-3c0-2.8-3.6-5-8-5z"/></svg>
+        <span id="nameLabel">Add your name</span>
+      </button>
+    </div>
+  </div>
+</header>
+
+<nav class="tabs" aria-label="Sections">
+  <div class="wrap" role="tablist">
+    <button class="tab" role="tab" data-view="find" aria-selected="true">Find a game</button>
+    <button class="tab" role="tab" data-view="host" aria-selected="false">Host a game</button>
+    <button class="tab" role="tab" data-view="places" aria-selected="false">Places to play</button>
+    <button class="tab" role="tab" data-view="mine" aria-selected="false">My games</button>
+  </div>
+</nav>
+
+<main>
+  <div class="wrap">
+    <div class="banner" id="locBanner" hidden>
+      <p><strong>Where do you play?</strong>SportBuddy uses your location to show games and courts near you. Your location stays in this browser.</p>
+      <button class="btn primary" type="button" id="bannerGeo">Use my current location</button>
+      <button class="btn" type="button" id="bannerManual">Type a city or ZIP</button>
+    </div>
+
+    <div class="sports" id="sportChips" role="group" aria-label="Sport"></div>
+
+    <section id="view-find">
+      <div class="layout">
+        <aside class="panel">
+          <div class="cal-head">
+            <button class="icon-btn" type="button" id="calPrev" aria-label="Previous month">‹</button>
+            <h2 id="calTitle">Month</h2>
+            <button class="icon-btn" type="button" id="calNext" aria-label="Next month">›</button>
+          </div>
+          <div class="cal" id="cal"></div>
+          <div class="cal-foot"><span>● days with games</span><button class="linkish" type="button" id="calAll">Show all dates</button></div>
+          <div class="filters">
+            <label class="f">Distance
+              <select id="radius">
+                <option value="5">Within 5</option>
+                <option value="10">Within 10</option>
+                <option value="25" selected>Within 25</option>
+                <option value="50">Within 50</option>
+                <option value="0">Anywhere</option>
+              </select>
+            </label>
+            <label class="check"><input type="checkbox" id="openOnly"> Only games with open spots</label>
+          </div>
+        </aside>
+        <div>
+          <div class="list-head"><h2 id="listTitle">Upcoming games</h2><span class="muted" id="listCount"></span></div>
+          <div class="games" id="gameList"></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="view-host" hidden>
+      <div class="list-head"><h2>Host a game</h2><span class="muted">Others nearby can join or get on the backup list.</span></div>
+      <form class="host" id="hostForm" autocomplete="off">
+        <label class="f">Sport<select id="h-sport" required></select></label>
+        <label class="f">Players needed (including you)<input type="number" id="h-max" min="2" max="40" value="4" required></label>
+        <label class="f">Date<input type="date" id="h-date" required></label>
+        <label class="f">Start time<input type="time" id="h-time" value="18:00" required></label>
+        <label class="f">How long<select id="h-dur"><option value="60">1 hour</option><option value="90" selected>1.5 hours</option><option value="120">2 hours</option><option value="180">3 hours</option></select></label>
+        <label class="f">Backup list spots<select id="h-backups"><option value="0">No backup list</option><option value="2">2</option><option value="4" selected>4</option><option value="6">6</option><option value="10">10</option></select></label>
+        <label class="f full">Where
+          <input type="text" id="h-venue" placeholder="e.g. Riverside Park courts 3–4" required>
+          <span class="hint" id="h-venue-hint">Pick a spot from <button class="linkish" type="button" id="h-findPlace">Places to play</button>, or type one.</span>
+        </label>
+        <label class="f">Level<select id="h-level"></select></label>
+        <label class="f">Cost per person<input type="text" id="h-cost" placeholder="Free, $5 court fee, split…"></label>
+        <label class="f full">Notes for players<textarea id="h-notes" placeholder="Bring a paddle, we rotate partners every game…"></textarea></label>
+        <fieldset class="vis full"><legend>Who can join</legend>
+          <label class="opt"><input type="radio" name="h-vis" value="public" checked><span><b>Public game</b>Listed in Find a game. Players send a join request, and you accept or decline each one.</span></label>
+          <label class="opt"><input type="radio" name="h-vis" value="private"><span><b>Private game</b>Not listed. Only people you send the invite link to can see it and join.</span></label>
+        </fieldset>
+        <label class="check full"><input type="checkbox" id="h-playing" checked> I’m playing too (takes one spot)</label>
+        <div class="actions full"><button class="btn primary" type="submit" id="h-submit">Post game</button><span class="status" id="h-status"></span></div>
+      </form>
+    </section>
+
+    <section id="view-places" hidden>
+      <div class="list-head"><h2 id="placesTitle">Places to play</h2><span class="muted">From OpenStreetMap. Prices show only where the map lists them.</span></div>
+      <div class="search-row">
+        <label class="f">Sport<select id="p-sport"></select></label>
+        <label class="f">Search within<select id="p-radius"><option value="3000">3</option><option value="8000" selected>8</option><option value="16000">16</option><option value="30000">30</option></select></label>
+        <button class="btn primary" type="button" id="p-go">Find places</button>
+      </div>
+      <div id="placesOut"></div>
+    </section>
+
+    <section id="view-mine" hidden>
+      <div class="list-head"><h2>My games</h2><span class="muted" id="mineCount"></span></div>
+      <div class="games" id="mineList"></div>
+    </section>
+  </div>
+</main>
+<footer><div class="wrap" id="footNote"></div></footer>
+
+<script>
+(() => {
+"use strict";
+const $ = (s, el = document) => el.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+
+/* ---------- sports ---------- */
+const DUPR = ["Any level", "New to it", "2.5 – 3.0", "3.0 – 3.5", "3.5 – 4.0", "4.0+"];
+const GEN = ["Any level", "Beginner", "Casual", "Intermediate", "Advanced"];
+const SPORTS = [
+  { id: "pickleball", name: "Pickleball", players: 4, levels: DUPR, osm: '["sport"~"pickleball"]', alt: { osm: '["sport"~"tennis"]', note: "Tennis court. Many are lined for pickleball too." } },
+  { id: "tennis", name: "Tennis", players: 4, levels: ["Any level", "NTRP 2.5", "NTRP 3.0", "NTRP 3.5", "NTRP 4.0+"], osm: '["sport"~"tennis"]' },
+  { id: "badminton", name: "Badminton", players: 4, levels: GEN, osm: '["sport"~"badminton"]' },
+  { id: "basketball", name: "Basketball", players: 10, levels: GEN, osm: '["sport"~"basketball"]' },
+  { id: "soccer", name: "Soccer", players: 10, levels: GEN, osm: '["sport"~"soccer|futsal"]' },
+  { id: "volleyball", name: "Volleyball", players: 12, levels: GEN, osm: '["sport"~"volleyball"]' },
+  { id: "table_tennis", name: "Table tennis", players: 2, levels: GEN, osm: '["sport"~"table_tennis"]' },
+  { id: "running", name: "Running", players: 8, levels: ["Any pace", "Easy pace", "Moderate", "Fast"], osm: '["leisure"="track"]' },
+  { id: "baseball", name: "Baseball", players: 18, levels: GEN, osm: '["sport"~"baseball|softball"]' },
+  { id: "golf", name: "Golf", players: 4, levels: ["Any handicap", "Beginner", "18+", "10–18", "Under 10"], osm: '["leisure"="golf_course"]' },
+];
+const sportById = id => SPORTS.find(s => s.id === id) || { id, name: id, players: 4, levels: GEN };
+
+/* ---------- local prefs ---------- */
+const PREF_KEY = "sportbuddy.prefs.v1";
+function loadPrefs() { try { return JSON.parse(localStorage.getItem(PREF_KEY)) || {}; } catch { return {}; } }
+function savePrefs() { try { localStorage.setItem(PREF_KEY, JSON.stringify(prefs)); } catch {} }
+const prefs = loadPrefs();
+if (!prefs.key) { prefs.key = "g" + Math.random().toString(36).slice(2, 10) + Date.now().toString(36); savePrefs(); }
+
+const useMiles = /^en-(US|GB|LR|MM)/.test(navigator.language || "");
+const UNIT = useMiles ? "mi" : "km";
+document.querySelectorAll("#radius option, #p-radius option").forEach(o => {
+  if (o.value !== "0") o.textContent = (o.textContent.startsWith("Within") ? o.textContent : o.textContent) + " " + UNIT;
+});
+if (useMiles) document.querySelectorAll("#p-radius option").forEach(o => o.value = String(Math.round(+o.textContent.split(" ")[0] * 1609)));
+else document.querySelectorAll("#p-radius option").forEach(o => o.value = String(+o.textContent.split(" ")[0] * 1000));
+
+const state = {
+  me: { key: prefs.key, name: prefs.name || "" },
+  loc: prefs.loc || null,           // {lat, lon, label} or {label}
+  sport: prefs.sport || "all",
+  selDate: null,
+  month: (() => { const d = new Date(); return new Date(d.getFullYear(), d.getMonth(), 1); })(),
+  games: new Map(),
+  signups: new Map(),
+  mode: "local",
+  canWrite: true,
+  view: "find",
+};
+
+/* ---------- storage: shared (claude db) or local ---------- */
+const listeners = new Set();
+const emit = () => listeners.forEach(f => f());
+const LOCAL_KEY = "sportbuddy.data.v1";
+const local = {
+  read() { try { return JSON.parse(localStorage.getItem(LOCAL_KEY)) || { games: {}, signups: {} }; } catch { return { games: {}, signups: {} }; } },
+  write(d) { try { localStorage.setItem(LOCAL_KEY, JSON.stringify(d)); } catch {} },
+  load() { const d = this.read(); state.games = new Map(Object.entries(d.games)); state.signups = new Map(Object.entries(d.signups)); emit(); },
+};
+let db = null;
+const safeId = s => String(s).replace(/[^A-Za-z0-9_-]/g, "-").slice(0, 120);
+const store = {
+  async putGame(g) {
+    if (db) return db.collection("games").doc(g.id).set(g);
+    const d = local.read(); d.games[g.id] = g; local.write(d); local.load();
+  },
+  async deleteGame(id) {
+    if (db) {
+      const mine = [...state.signups.values()].filter(s => s.gameId === id);
+      await db.collection("games").doc(id).delete();
+      for (const s of mine) await db.collection("signups").doc(s.id).delete();
+      return;
+    }
+    const d = local.read(); delete d.games[id];
+    for (const k of Object.keys(d.signups)) if (d.signups[k].gameId === id) delete d.signups[k];
+    local.write(d); local.load();
+  },
+  async putSignup(s) {
+    if (db) return db.collection("signups").doc(s.id).set(s);
+    const d = local.read(); d.signups[s.id] = s; local.write(d); local.load();
+  },
+  async deleteSignup(id) {
+    if (db) return db.collection("signups").doc(id).delete();
+    const d = local.read(); delete d.signups[id]; local.write(d); local.load();
+  },
+};
+window.addEventListener("storage", e => { if (!db && e.key === LOCAL_KEY) local.load(); });
+
+async function connectShared() {
+  if (!window.claude || typeof window.claude.use !== "function") return;
+  try {
+    const [d, user] = await Promise.all([window.claude.use("db"), window.claude.use("user")]);
+    if (!d) return;
+    if (user) {
+      try { const id = await user.id(); if (id) { state.me.key = "u" + safeId(id); } } catch {}
+      try { const w = await user.can("data.write"); if (w === false) state.canWrite = false; } catch {}
+    }
+    db = d; state.mode = "shared";
+    state.games = new Map(); state.signups = new Map();
+    db.collection("games").onSnapshot(snap => {
+      const m = new Map(); snap.docs.forEach(doc => m.set(doc.id, { ...doc.data(), id: doc.id })); state.games = m; emit();
+    }, err => toast("Lost connection to shared games. Reload to retry."));
+    db.collection("signups").onSnapshot(snap => {
+      const m = new Map(); snap.docs.forEach(doc => m.set(doc.id, { ...doc.data(), id: doc.id })); state.signups = m; emit();
+    }, () => {});
+    renderFoot(); emit();
+  } catch {}
+}
+
+/* ---------- helpers ---------- */
+const pad = n => String(n).padStart(2, "0");
+const ymd = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+const todayStr = () => ymd(new Date());
+function parseYmd(s) { const [y, m, d] = s.split("-").map(Number); return new Date(y, m - 1, d); }
+function fmtTime(t) { if (!t) return ""; const [h, m] = t.split(":").map(Number); const d = new Date(2000, 0, 1, h, m); return d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }); }
+function endTime(t, mins) { const [h, m] = t.split(":").map(Number); const d = new Date(2000, 0, 1, h, m + (+mins || 0)); return d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }); }
+function dist(a, b) {
+  if (!a || !b || a.lat == null || b.lat == null) return null;
+  const R = useMiles ? 3958.8 : 6371, r = x => x * Math.PI / 180;
+  const dLat = r(b.lat - a.lat), dLon = r(b.lon - a.lon);
+  const h = Math.sin(dLat / 2) ** 2 + Math.cos(r(a.lat)) * Math.cos(r(b.lat)) * Math.sin(dLon / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(h));
+}
+const fmtDist = d => d == null ? "" : (d < 1 ? d.toFixed(1) : Math.round(d)) + " " + UNIT;
+function displayName() { return state.me.name || "Guest " + state.me.key.slice(-4).toUpperCase(); }
+let toastT;
+function toast(msg) {
+  let t = $(".toast"); if (!t) { t = document.createElement("div"); t.className = "toast"; t.setAttribute("role", "status"); document.body.appendChild(t); }
+  t.textContent = msg; t.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => t.hidden = true, 3200);
+}
+// Signups have a status: "pending" (join request on a public game, waiting for the host), "declined", or approved (no status).
+// Only approved signups take spots; they are ordered by when they were approved.
+function roster(gameId) {
+  const g = state.games.get(gameId);
+  const mineFor = [...state.signups.values()].filter(s => s.gameId === gameId);
+  const all = mineFor.filter(s => !s.status).sort((a, b) => (a.joinedAt || 0) - (b.joinedAt || 0));
+  const pending = mineFor.filter(s => s.status === "pending").sort((a, b) => (a.requestedAt || 0) - (b.requestedAt || 0));
+  const max = +g?.maxPlayers || 0;
+  return { players: all.slice(0, max), backups: all.slice(max), all, pending, any: mineFor };
+}
+const isPast = g => g.date < todayStr();
+const isPrivate = g => g.visibility === "private";
+const needsApproval = g => !isPrivate(g) && !!g.approval;
+// Private games are hidden unless you host it, are on it, or opened its invite link.
+const canSee = g => !isPrivate(g) || g.hostKey === state.me.key || (prefs.invites || {})[g.id] === g.inviteCode || roster(g.id).any.some(s => s.key === state.me.key);
+const pageUrl = () => location.href.split("#")[0];
+const inviteLink = g => `${pageUrl()}#invite=${encodeURIComponent(g.id)}.${encodeURIComponent(g.inviteCode)}`;
+// Opening an invite link remembers the code in this browser, then shows that game.
+let pendingInvite = null;
+function readInvite() {
+  const m = location.hash.match(/^#invite=([^.]+)\.(.+)$/); if (!m) return;
+  const id = decodeURIComponent(m[1]), code = decodeURIComponent(m[2]);
+  prefs.invites = { ...(prefs.invites || {}), [id]: code }; savePrefs();
+  pendingInvite = id;
+  try { history.replaceState(null, "", location.pathname + location.search); } catch {}
+}
+function showInvite() {
+  if (!pendingInvite) return;
+  const g = state.games.get(pendingInvite); if (!g) return;
+  pendingInvite = null;
+  if (!canSee(g)) { toast("That invite link is no longer valid."); return; }
+  state.selDate = g.date; state.month = new Date(parseYmd(g.date).getFullYear(), parseYmd(g.date).getMonth(), 1);
+  setView("find");
+  toast(`You’re invited to ${sportById(g.sport).name.toLowerCase()} at ${g.venueName}.`);
+}
+function shareModal(g) {
+  const link = inviteLink(g);
+  modal(`<h3>Private game posted</h3>
+    <p class="muted" style="margin:0">Send this link to the people you want to invite. Only people with the link can see and join the game.</p>
+    <div class="invite"><input type="text" readonly value="${esc(link)}" id="inv-in" aria-label="Invite link"><button class="btn primary" id="inv-copy">Copy link</button></div>
+    <div class="actions"><button class="btn" id="inv-done">Done</button></div>`,
+    (el, close) => {
+      $("#inv-in", el).onfocus = e => e.target.select();
+      $("#inv-copy", el).onclick = async () => { try { await navigator.clipboard.writeText(link); toast("Invite link copied."); } catch { $("#inv-in", el).select(); toast("Select the link and copy it."); } };
+      $("#inv-done", el).onclick = close;
+    });
+}
+
+/* ---------- modal ---------- */
+function modal(html, onMount) {
+  const bg = document.createElement("div"); bg.className = "modal-bg";
+  bg.innerHTML = `<div class="modal" role="dialog" aria-modal="true">${html}</div>`;
+  document.body.appendChild(bg);
+  const close = () => bg.remove();
+  bg.addEventListener("click", e => { if (e.target === bg) close(); });
+  bg.addEventListener("keydown", e => { if (e.key === "Escape") close(); });
+  onMount(bg, close);
+  const f = bg.querySelector("input, button"); f && f.focus();
+}
+function askName(then) {
+  modal(`<h3>What should players call you?</h3>
+    <p class="muted" style="margin:0">No account needed. The host sees this name on the roster.</p>
+    <input type="text" id="nm-in" maxlength="40" placeholder="e.g. Thien" value="${esc(state.me.name)}">
+    <div class="actions"><button class="btn primary" id="nm-ok">Save</button><button class="btn" id="nm-skip">Continue as ${esc("Guest " + state.me.key.slice(-4).toUpperCase())}</button></div>`,
+    (el, close) => {
+      const done = save => { if (save) { state.me.name = $("#nm-in", el).value.trim().slice(0, 40); prefs.name = state.me.name; savePrefs(); } close(); renderHeader(); render(); then && then(); };
+      $("#nm-ok", el).onclick = () => done(true);
+      $("#nm-in", el).onkeydown = e => { if (e.key === "Enter") done(true); };
+      $("#nm-skip", el).onclick = () => done(false);
+    });
+}
+
+/* ---------- location ---------- */
+async function geocode(q) {
+  const r = await fetch("https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&q=" + encodeURIComponent(q), { headers: { "Accept-Language": navigator.language || "en" } });
+  const j = await r.json(); if (!j.length) throw new Error("not found");
+  return { lat: +j[0].lat, lon: +j[0].lon, label: j[0].display_name.split(",").slice(0, 2).join(",").trim() };
+}
+async function reverse(lat, lon) {
+  try {
+    const r = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&zoom=14&lat=${lat}&lon=${lon}`);
+    const j = await r.json(); const a = j.address || {};
+    return [a.suburb || a.neighbourhood || a.town || a.city_district, a.city || a.town || a.county].filter(Boolean).filter((v, i, x) => x.indexOf(v) === i).join(", ") || "Your location";
+  } catch { return "Your location"; }
+}
+function setLoc(loc) { state.loc = loc; prefs.loc = loc; savePrefs(); renderHeader(); render(); }
+function useGeo() {
+  if (!navigator.geolocation) { manualLoc("This browser can’t share location. Type your city or ZIP instead."); return; }
+  $("#locLabel").textContent = "Locating…";
+  navigator.geolocation.getCurrentPosition(async p => {
+    const lat = +p.coords.latitude.toFixed(4), lon = +p.coords.longitude.toFixed(4);
+    setLoc({ lat, lon, label: "Your location" });
+    const label = await reverse(lat, lon); setLoc({ lat, lon, label });
+    toast("Location set to " + label);
+  }, () => { renderHeader(); manualLoc("Location access was blocked. Type your city or ZIP instead."); }, { enableHighAccuracy: false, timeout: 12000, maximumAge: 600000 });
+}
+function manualLoc(why) {
+  modal(`<h3>Your area</h3>
+    ${why ? `<p class="muted" style="margin:0">${esc(why)}</p>` : ""}
+    <input type="text" id="loc-in" placeholder="City, neighborhood, or ZIP" value="${esc(state.loc?.label && state.loc.label !== "Your location" ? state.loc.label : "")}">
+    <div class="actions"><button class="btn primary" id="loc-ok">Set area</button>${navigator.geolocation ? '<button class="btn" id="loc-geo">Use my current location</button>' : ""}</div>
+    <span class="status" id="loc-st"></span>`,
+    (el, close) => {
+      const go = async () => {
+        const q = $("#loc-in", el).value.trim(); if (!q) return;
+        $("#loc-st", el).textContent = "Looking it up…";
+        try { setLoc(await geocode(q)); close(); toast("Area set"); }
+        catch { setLoc({ label: q }); close(); toast("Saved “" + q + "”. Couldn’t look up the map spot, so distances won’t show."); }
+      };
+      $("#loc-ok", el).onclick = go;
+      $("#loc-in", el).onkeydown = e => { if (e.key === "Enter") go(); };
+      const g = $("#loc-geo", el); if (g) g.onclick = () => { close(); useGeo(); };
+    });
+}
+
+/* ---------- header / chips ---------- */
+function renderHeader() {
+  $("#locLabel").textContent = state.loc?.label || "Set your location";
+  $("#nameLabel").textContent = state.me.name || "Add your name";
+  $("#locBanner").hidden = !!state.loc;
+}
+function renderChips() {
+  const all = [{ id: "all", name: "All sports" }, ...SPORTS];
+  $("#sportChips").innerHTML = all.map(s => `<button class="chip" type="button" data-sport="${s.id}" aria-pressed="${state.sport === s.id}">${esc(s.name)}</button>`).join("");
+}
+$("#sportChips").addEventListener("click", e => {
+  const b = e.target.closest("[data-sport]"); if (!b) return;
+  state.sport = b.dataset.sport; prefs.sport = state.sport; savePrefs();
+  if (state.sport !== "all") { $("#h-sport").value = state.sport; onHostSport(); $("#p-sport").value = state.sport; }
+  renderChips(); render();
+});
+function renderFoot() {
+  $("#footNote").textContent = state.mode === "shared"
+    ? "Games are shared with everyone who opens this page. Your name and location preference stay in this browser."
+    : "Games are saved in this browser. To share games with other people, SportBuddy needs a shared database (see the README).";
+}
+
+/* ---------- calendar ---------- */
+function visibleGames() {
+  const radius = +$("#radius").value;
+  const openOnly = $("#openOnly").checked;
+  return [...state.games.values()].filter(g => {
+    if (isPast(g) || !canSee(g)) return false;
+    if (state.sport !== "all" && g.sport !== state.sport) return false;
+    if (radius && state.loc?.lat != null && g.lat != null) { const d = dist(state.loc, g); if (d != null && d > radius) return false; }
+    if (openOnly) { const r = roster(g.id); if (r.players.length >= +g.maxPlayers) return false; }
+    return true;
+  }).sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time));
+}
+function renderCal(games) {
+  const m = state.month, y = m.getFullYear(), mo = m.getMonth();
+  $("#calTitle").textContent = m.toLocaleDateString([], { month: "long", year: "numeric" });
+  const counts = {}; games.forEach(g => counts[g.date] = (counts[g.date] || 0) + 1);
+  const first = new Date(y, mo, 1), start = new Date(y, mo, 1 - first.getDay());
+  const dows = [...Array(7)].map((_, i) => new Date(2023, 0, 1 + i).toLocaleDateString([], { weekday: "narrow" }));
+  let h = dows.map(d => `<div class="dow">${d}</div>`).join("");
+  const t = todayStr();
+  for (let i = 0; i < 42; i++) {
+    const d = new Date(start.getFullYear(), start.getMonth(), start.getDate() + i), s = ymd(d);
+    if (i >= 35 && d.getMonth() !== mo) break;
+    const cls = ["day", d.getMonth() !== mo && "out", s < t && "past", s === t && "today", s === state.selDate && "sel"].filter(Boolean).join(" ");
+    const n = counts[s];
+    h += `<button class="${cls}" type="button" data-date="${s}" aria-label="${d.toDateString()}${n ? ", " + n + " game" + (n > 1 ? "s" : "") : ""}">${d.getDate()}${n ? '<span class="dot"></span>' : ""}</button>`;
+  }
+  $("#cal").innerHTML = h;
+}
+$("#cal").addEventListener("click", e => {
+  const b = e.target.closest("[data-date]"); if (!b) return;
+  state.selDate = state.selDate === b.dataset.date ? null : b.dataset.date;
+  const d = parseYmd(b.dataset.date); if (d.getMonth() !== state.month.getMonth()) state.month = new Date(d.getFullYear(), d.getMonth(), 1);
+  render();
+});
+$("#calPrev").onclick = () => { state.month = new Date(state.month.getFullYear(), state.month.getMonth() - 1, 1); render(); };
+$("#calNext").onclick = () => { state.month = new Date(state.month.getFullYear(), state.month.getMonth() + 1, 1); render(); };
+$("#calAll").onclick = () => { state.selDate = null; render(); };
+$("#radius").onchange = () => render();
+$("#openOnly").onchange = () => render();
+
+/* ---------- game cards ---------- */
+function gameCard(g) {
+  const sp = sportById(g.sport), r = roster(g.id), max = +g.maxPlayers, bmax = +g.maxBackups || 0;
+  const mine = r.any.find(s => s.key === state.me.key);
+  const isHost = g.hostKey === state.me.key, approval = needsApproval(g);
+  const d = parseYmd(g.date);
+  const open = max - r.players.length;
+  const dd = dist(state.loc, g);
+  const status = open > 0 ? `<span class="tag open">${open} spot${open > 1 ? "s" : ""} open</span>` : `<span class="tag full">Full${bmax ? ` · backup ${r.backups.length}/${bmax}` : ""}</span>`;
+  const slots = [...Array(max)].map((_, i) => `<span class="slot${i < r.players.length ? " on" : ""}"></span>`).join("")
+    + (bmax ? `<span style="width:8px"></span>` + [...Array(bmax)].map((_, i) => `<span class="slot bk${i < r.backups.length ? " on" : ""}"></span>`).join("") : "");
+  const who = (s, i) => `<span class="who${s.key === state.me.key ? " me" : ""}">${esc(s.name)}${s.key === g.hostKey ? " (host)" : ""}${isHost && s.key !== state.me.key && state.canWrite ? `<button type="button" data-act="kick" data-sid="${esc(s.id)}" aria-label="Remove ${esc(s.name)}">×</button>` : ""}</span>`;
+  let action = "";
+  if (!state.canWrite) action = `<span class="status">You can view games here. Ask the page owner for Contributor access to join.</span>`;
+  else if (mine?.status === "pending") action = `<button class="btn" type="button" data-act="leave" data-sid="${esc(mine.id)}">Cancel request</button><span class="status">Request sent. Waiting for ${esc(g.hostName)} to accept.</span>`;
+  else if (mine?.status === "declined") action = `<button class="btn" type="button" data-act="leave" data-sid="${esc(mine.id)}">Dismiss</button><span class="status">The host didn’t accept your request for this game.</span>`;
+  else if (mine) action = `<button class="btn" type="button" data-act="leave" data-sid="${esc(mine.id)}">${r.backups.includes(mine) ? "Leave backup list" : "Leave game"}</button><span class="status">${r.backups.includes(mine) ? `You’re #${r.backups.indexOf(mine) + 1} on the backup list. You move up automatically if someone leaves.` : "You’re in."}</span>`;
+  else if (open > 0) action = `<button class="btn primary" type="button" data-act="join">${approval && !isHost ? "Request to join" : "Join game"}</button>${approval && !isHost ? `<span class="status">The host accepts each player.</span>` : ""}`;
+  else if (r.backups.length < bmax) action = `<button class="btn ball" type="button" data-act="join">${approval && !isHost ? "Request a backup spot" : "Join backup list"}</button>`;
+  else action = `<span class="status">Game and backup list are full.</span>`;
+  const hostTools = isHost && state.canWrite ? `${isPrivate(g) && g.inviteCode ? `<button class="btn" type="button" data-act="invite">Copy invite link</button>` : ""}<button class="btn danger" type="button" data-act="cancel">Cancel game</button>` : "";
+  const roomLeft = open > 0 || r.backups.length < bmax;
+  const requests = isHost && r.pending.length ? `<div class="requests"><div class="lbl">Join requests (${r.pending.length})</div>${r.pending.map(s => `<div class="req"><b>${esc(s.name)}</b><span class="muted" style="font-size:12.5px">${new Date(s.requestedAt || Date.now()).toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}</span>${state.canWrite ? (roomLeft ? `<button class="btn primary" type="button" data-act="accept" data-sid="${esc(s.id)}">Accept${open > 0 ? "" : " as backup"}</button>` : `<span class="status">No spots left</span>`) + `<button class="btn" type="button" data-act="decline" data-sid="${esc(s.id)}">Decline</button>` : ""}</div>`).join("")}</div>` : "";
+  return `<article class="game${isHost ? " mine" : ""}" data-gid="${esc(g.id)}">
+    <div class="g-top">
+      <div class="when"><div class="m">${d.toLocaleDateString([], { month: "short" })}</div><div class="d">${d.getDate()}</div><div class="w">${d.toLocaleDateString([], { weekday: "short" })}</div></div>
+      <div class="g-main">
+        <h3 class="g-title">${esc(sp.name)} at ${esc(g.venueName)}</h3>
+        <div class="g-meta">
+          <span class="mono">${fmtTime(g.time)}–${endTime(g.time, g.durationMin)}</span>
+          ${g.level ? `<span>Level <b>${esc(g.level)}</b></span>` : ""}
+          ${g.cost ? `<span>Cost <b>${esc(g.cost)}</b></span>` : ""}
+          ${dd != null ? `<span>${fmtDist(dd)} away</span>` : g.area ? `<span>${esc(g.area)}</span>` : ""}
+          <span>Host <b>${esc(g.hostName)}</b>${isHost ? ' <span class="tag host">You</span>' : ""}</span>
+          ${isPrivate(g) ? '<span class="tag priv">Private · invite only</span>' : approval ? '<span class="tag">Public · host approves</span>' : ""}
+        </div>
+      </div>
+    </div>
+    <div class="roster">
+      <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center"><span class="lbl">Players ${r.players.length}/${max}</span><span class="slots" aria-hidden="true">${slots}</span>${status}</div>
+      ${r.players.length ? `<div class="names">${r.players.map(who).join("")}</div>` : `<div class="status">No one yet. Be the first.</div>`}
+      ${r.backups.length ? `<div class="lbl">Backup list</div><div class="names">${r.backups.map(who).join("")}</div>` : ""}
+      ${requests}
+    </div>
+    ${g.notes ? `<p class="notes">${esc(g.notes)}</p>` : ""}
+    <div class="actions">${action}
+      ${g.lat != null ? `<a class="btn" href="https://www.google.com/maps/dir/?api=1&destination=${g.lat},${g.lon}" target="_blank" rel="noopener">Directions</a>` : ""}
+      <button class="btn" type="button" data-act="copy">Copy details</button>${hostTools}</div>
+  </article>`;
+}
+async function onCardClick(e) {
+  const b = e.target.closest("[data-act]"); if (!b) return;
+  const card = b.closest("[data-gid]"), g = state.games.get(card.dataset.gid); if (!g) return;
+  const act = b.dataset.act;
+  try {
+    if (act === "join") {
+      const doJoin = async () => {
+        const r = roster(g.id);
+        if (r.players.length >= +g.maxPlayers && r.backups.length >= (+g.maxBackups || 0)) { toast("That game just filled up."); return; }
+        const base = { id: safeId(g.id + "_" + state.me.key), gameId: g.id, key: state.me.key, name: displayName() };
+        if (needsApproval(g) && g.hostKey !== state.me.key) {
+          await store.putSignup({ ...base, status: "pending", requestedAt: Date.now() });
+          toast("Request sent. You’re in once the host accepts.");
+          return;
+        }
+        await store.putSignup({ ...base, joinedAt: Date.now() });
+        toast(r.players.length < +g.maxPlayers ? "You’re in. See you there." : "You’re on the backup list.");
+      };
+      if (!state.me.name && !prefs.askedName) { prefs.askedName = true; savePrefs(); askName(doJoin); } else await doJoin();
+    } else if (act === "accept" || act === "decline") {
+      const s = state.signups.get(b.dataset.sid); if (!s || g.hostKey !== state.me.key) return;
+      const { status, ...rest } = s;
+      if (act === "decline") { await store.putSignup({ ...rest, status: "declined" }); toast(`Declined ${s.name}.`); return; }
+      const r = roster(g.id);
+      if (r.players.length >= +g.maxPlayers && r.backups.length >= (+g.maxBackups || 0)) { toast("No spots left in this game."); return; }
+      await store.putSignup({ ...rest, joinedAt: Date.now() });
+      toast(r.players.length < +g.maxPlayers ? `${s.name} is in.` : `${s.name} is on the backup list.`);
+    } else if (act === "invite") {
+      try { await navigator.clipboard.writeText(inviteLink(g)); toast("Invite link copied."); } catch { shareModal(g); }
+    } else if (act === "leave" || act === "kick") {
+      const s = state.signups.get(b.dataset.sid);
+      await store.deleteSignup(b.dataset.sid);
+      toast(act === "kick" ? "Removed from the roster." : s?.status === "pending" ? "Request cancelled." : s?.status === "declined" ? "Removed." : "You left the game.");
+    } else if (act === "cancel") {
+      if (b.dataset.confirm) { await store.deleteGame(g.id); toast("Game cancelled."); }
+      else { b.dataset.confirm = "1"; b.textContent = "Tap again to cancel for everyone"; setTimeout(() => { if (b.isConnected) { delete b.dataset.confirm; b.textContent = "Cancel game"; } }, 4000); }
+    } else if (act === "copy") {
+      const r = roster(g.id), sp = sportById(g.sport);
+      const txt = `${sp.name} at ${g.venueName}\n${parseYmd(g.date).toDateString()}, ${fmtTime(g.time)}–${endTime(g.time, g.durationMin)}\nPlayers ${r.players.length}/${g.maxPlayers}${g.level ? "\nLevel: " + g.level : ""}${g.cost ? "\nCost: " + g.cost : ""}\nHost: ${g.hostName}\n${isPrivate(g) ? "Join with this invite link: " + inviteLink(g) : "Join on SportBuddy: " + pageUrl()}`;
+      try { await navigator.clipboard.writeText(txt); toast("Game details copied."); } catch { toast("Couldn’t copy here. Select the game text instead."); }
+    }
+  } catch (err) {
+    toast(err?.code === "invalid_argument" ? "You don’t have permission to change games on this page." : "That didn’t save. Check your connection and try again.");
+    if (err?.code === "invalid_argument") { state.canWrite = false; render(); }
+  }
+}
+$("#gameList").addEventListener("click", onCardClick);
+$("#mineList").addEventListener("click", onCardClick);
+
+function renderFind() {
+  const all = visibleGames();
+  renderCal(all);
+  const list = state.selDate ? all.filter(g => g.date === state.selDate) : all;
+  $("#listTitle").textContent = state.selDate ? parseYmd(state.selDate).toLocaleDateString([], { weekday: "long", month: "long", day: "numeric" }) : "Upcoming games";
+  $("#listCount").textContent = list.length ? `${list.length} game${list.length > 1 ? "s" : ""}` : "";
+  const spName = state.sport === "all" ? "" : sportById(state.sport).name.toLowerCase() + " ";
+  $("#gameList").innerHTML = list.length ? list.map(gameCard).join("") : `<div class="empty"><h3>No ${spName}games ${state.selDate ? "on this day" : "yet"}</h3><p>Host one and people nearby can join or sign up as backups.</p><button class="btn primary" type="button" id="emptyHost">Host a ${spName}game${state.selDate ? " this day" : ""}</button></div>`;
+  const eh = $("#emptyHost"); if (eh) eh.onclick = () => { if (state.selDate) $("#h-date").value = state.selDate; setView("host"); };
+}
+function renderMine() {
+  const mine = [...state.games.values()].filter(g => !isPast(g) && (g.hostKey === state.me.key || roster(g.id).any.some(s => s.key === state.me.key)))
+    .sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time));
+  $("#mineCount").textContent = mine.length ? `${mine.length} upcoming` : "";
+  $("#mineList").innerHTML = mine.length ? mine.map(gameCard).join("") : `<div class="empty"><h3>Nothing on your schedule</h3><p>Games you host or join show up here.</p></div>`;
+}
+
+/* ---------- host form ---------- */
+function fillSportSelects() {
+  const opts = SPORTS.map(s => `<option value="${s.id}">${esc(s.name)}</option>`).join("");
+  $("#h-sport").innerHTML = opts; $("#p-sport").innerHTML = opts;
+  const s = state.sport !== "all" ? state.sport : "pickleball";
+  $("#h-sport").value = s; $("#p-sport").value = s;
+}
+function onHostSport() {
+  const sp = sportById($("#h-sport").value);
+  $("#h-max").value = sp.players;
+  $("#h-level").innerHTML = sp.levels.map(l => `<option>${esc(l)}</option>`).join("");
+}
+$("#h-sport").onchange = onHostSport;
+$("#h-date").min = todayStr();
+$("#h-date").value = todayStr();
+let pickedVenue = null;
+$("#h-venue").oninput = () => { pickedVenue = null; $("#h-venue-hint").innerHTML = 'Pick a spot from <button class="linkish" type="button" id="h-findPlace">Places to play</button>, or type one.'; bindFindPlace(); };
+function bindFindPlace() { const b = $("#h-findPlace"); if (b) b.onclick = () => { $("#p-sport").value = $("#h-sport").value; setView("places"); findPlaces(); }; }
+bindFindPlace();
+$("#hostForm").addEventListener("submit", async e => {
+  e.preventDefault();
+  if (!state.canWrite) { $("#h-status").textContent = "You can view games here but not post them."; return; }
+  const post = async () => {
+    const id = "g" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+    const venueName = $("#h-venue").value.trim();
+    const g = {
+      id, sport: $("#h-sport").value, date: $("#h-date").value, time: $("#h-time").value,
+      durationMin: +$("#h-dur").value, maxPlayers: Math.max(2, Math.min(40, +$("#h-max").value || 2)), maxBackups: +$("#h-backups").value,
+      venueName, level: $("#h-level").value, cost: $("#h-cost").value.trim().slice(0, 60), notes: $("#h-notes").value.trim().slice(0, 600),
+      hostKey: state.me.key, hostName: displayName(), area: state.loc?.label || "", createdAt: Date.now(),
+    };
+    if ($('input[name="h-vis"]:checked').value === "private") {
+      g.visibility = "private";
+      g.inviteCode = [...crypto.getRandomValues(new Uint8Array(9))].map(x => x.toString(36).padStart(2, "0")).join("").slice(0, 14);
+    } else { g.visibility = "public"; g.approval = true; }
+    const ll = pickedVenue && pickedVenue.name === venueName ? pickedVenue : state.loc;
+    if (ll?.lat != null) { g.lat = ll.lat; g.lon = ll.lon; }
+    $("#h-submit").disabled = true; $("#h-status").textContent = "Posting…";
+    try {
+      await store.putGame(g);
+      if ($("#h-playing").checked) await store.putSignup({ id: safeId(id + "_" + state.me.key), gameId: id, key: state.me.key, name: displayName(), joinedAt: Date.now() });
+      $("#h-status").textContent = ""; $("#hostForm").reset(); fillSportSelects(); onHostSport(); $("#h-date").value = todayStr(); pickedVenue = null;
+      state.selDate = g.date; state.month = new Date(parseYmd(g.date).getFullYear(), parseYmd(g.date).getMonth(), 1);
+      setView("find");
+      if (isPrivate(g)) shareModal(g); else toast("Game posted. You’ll see join requests on the game card and in My games.");
+    } catch (err) {
+      $("#h-status").textContent = err?.code === "invalid_argument" ? "You don’t have permission to post games on this page." : "Couldn’t post the game. Check your connection and try again.";
+    } finally { $("#h-submit").disabled = false; }
+  };
+  if (!state.me.name && !prefs.askedName) { prefs.askedName = true; savePrefs(); askName(post); } else post();
+});
+
+/* ---------- places (OpenStreetMap Overpass) ---------- */
+function priceOf(t) {
+  if (t.charge) return { cls: "paid", txt: t.charge };
+  if (t.fee === "no") return { cls: "free", txt: "Free" };
+  if (t.fee === "yes") return { cls: "paid", txt: "Fee charged (amount not listed)" };
+  return { cls: "", txt: "Price not listed" };
+}
+function mapSearchLinks(sp) {
+  const q = encodeURIComponent(`${sp.name} courts near ${state.loc?.label || "me"}`);
+  return `<div class="actions"><a class="btn" href="https://www.google.com/maps/search/${q}" target="_blank" rel="noopener">Search Google Maps</a><a class="btn" href="https://www.openstreetmap.org/search?query=${q}" target="_blank" rel="noopener">Search OpenStreetMap</a></div>`;
+}
+// Courts in OpenStreetMap are usually unnamed; the name lives on the park, school or sports centre around them.
+// So one query fetches the courts plus named places within 250 m of them, and courts are grouped under those names.
+const PARENT = '["name"]["leisure"~"^(park|sports_centre|recreation_ground|stadium|common|golf_course)$"]';
+const PARENT2 = '["name"]["amenity"~"^(school|college|university|community_centre|place_of_worship)$"]';
+async function overpass(filter, lat, lon, radius) {
+  const q = `[out:json][timeout:25];(nwr${filter}(around:${radius},${lat},${lon});)->.c;.c out center tags 150;`
+    + `(way${PARENT}(around.c:250);relation${PARENT}(around.c:250);way${PARENT2}(around.c:250);relation${PARENT2}(around.c:250););out bb tags 300;`;
+  const r = await fetch("https://overpass-api.de/api/interpreter", { method: "POST", body: "data=" + encodeURIComponent(q), headers: { "Content-Type": "application/x-www-form-urlencoded" } });
+  if (!r.ok) throw new Error("overpass " + r.status);
+  const els = (await r.json()).elements || [];
+  // Courts carry `center` (or are nodes); parents carry `bounds`.
+  return { courts: els.filter(e => !e.bounds || e.center), parents: els.filter(e => e.bounds && !e.center && e.tags?.name) };
+}
+function bboxDist(b, lat, lon) {
+  const dy = Math.max(b.minlat - lat, 0, lat - b.maxlat) * 111000;
+  const dx = Math.max(b.minlon - lon, 0, lon - b.maxlon) * 111000 * Math.cos(lat * Math.PI / 180);
+  return Math.hypot(dx, dy);
+}
+function shapeCourts(found, sp, note) {
+  const groups = new Map();
+  for (const el of found.courts) {
+    const t = el.tags || {}, lat = el.lat ?? el.center?.lat, lon = el.lon ?? el.center?.lon;
+    if (lat == null || /^(private|no)$/.test(t.access || "")) continue;
+    let key, name = t.name, parent = null;
+    if (!name) {
+      let best = null, bestScore = Infinity;
+      for (const p of found.parents) {
+        const d = bboxDist(p.bounds, lat, lon); if (d > 200) continue;
+        if (p.bounds.maxlat - p.bounds.minlat > 0.03 || p.bounds.maxlon - p.bounds.minlon > 0.03) continue; // skip huge areas (~3 km)
+        const area = (p.bounds.maxlat - p.bounds.minlat) * (p.bounds.maxlon - p.bounds.minlon);
+        const score = d * 1e6 + area; // inside beats nearby; smaller beats larger
+        if (score < bestScore) { best = p; bestScore = score; }
+      }
+      parent = best;
+    }
+    if (name) key = "n:" + name;
+    else if (parent) { key = "p:" + parent.type + parent.id; name = parent.tags.name; }
+    else key = "c:" + (Math.round(lat * 1000) / 1000) + "," + (Math.round(lon * 1000) / 1000); // ~100 m cluster
+    let g = groups.get(key);
+    if (!g) { g = { key, name, named: !!name, parentTags: parent?.tags || {}, items: [], note, osmId: (parent || el).type + "/" + (parent || el).id }; groups.set(key, g); }
+    g.items.push({ t, lat, lon });
+  }
+  return [...groups.values()].map(g => {
+    const all = g.items.map(i => i.t), first = g.items[0], pt = g.parentTags;
+    const lat = g.items.reduce((s, i) => s + i.lat, 0) / g.items.length, lon = g.items.reduce((s, i) => s + i.lon, 0) / g.items.length;
+    const pick = k => all.map(t => t[k]).find(Boolean) || pt[k];
+    const n = g.items.length, special = first.t.leisure === "track" ? "track" : first.t.leisure === "golf_course" ? "golf course" : null;
+    const kind = special ? (n > 1 ? n + " " + special + "s" : special[0].toUpperCase() + special.slice(1)) : n > 1 ? `${n} ${sp.name.toLowerCase()} courts` : `${sp.name} court`;
+    const priced = all.find(t => t.charge || t.fee) || (pt.charge || pt.fee ? pt : {});
+    const street = pick("addr:street"), num = pick("addr:housenumber");
+    return {
+      id: g.osmId, name: g.name || "", named: g.named, needsName: !g.name, lat, lon, kind, count: n,
+      price: priceOf(priced), hours: pick("opening_hours"), surface: pick("surface"), lit: all.some(t => t.lit === "yes") ? "yes" : "",
+      covered: all.some(t => t.covered === "yes" || t.indoor === "yes"), addr: [[num, street].filter(Boolean).join(" "), pick("addr:city")].filter(Boolean).join(", "),
+      web: pick("website") || pick("contact:website"), phone: pick("phone") || pick("contact:phone"), note: g.note,
+      d: dist(state.loc, { lat, lon }),
+    };
+  });
+}
+// For courts with no named place around them, ask Nominatim what is there (one request per second, per its usage policy).
+async function nameFromMap(v) {
+  try {
+    const r = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&zoom=17&lat=${v.lat}&lon=${v.lon}`);
+    const j = await r.json(), a = j.address || {};
+    const place = a.leisure || a.park || a.amenity || a.school || (j.name && j.name !== a.road ? j.name : "");
+    if (place) return place;
+    if (a.road) return `${v.kind.replace(/^\d+ /, "").replace(/^./, c => c.toUpperCase())}${v.count > 1 ? "" : ""} on ${a.road}`;
+  } catch {}
+  return "";
+}
+let lastPlaces = [], placesRun = 0;
+function venueCard(v, i) {
+  return `<div class="venue" data-vi="${i}">
+      <h3>${esc(v.name || v.kind)}</h3>
+      <div class="muted" style="font-size:13.5px">${esc(v.kind)}${v.d != null ? " · " + fmtDist(v.d) : ""}${v.addr ? " · " + esc(v.addr) : ""}</div>
+      <div class="price ${v.price.cls}">${esc(v.price.txt)}</div>
+      ${v.note ? `<div class="hint">${esc(v.note)}</div>` : ""}
+      <div style="font-size:13px" class="muted">${[v.covered ? "Indoor/covered" : "", v.lit === "yes" ? "Lights" : "", v.surface ? "Surface: " + esc(v.surface) : "", v.hours ? "Hours: " + esc(v.hours) : ""].filter(Boolean).join(" · ")}</div>
+      ${v.web ? `<a href="${esc(/^https?:/.test(v.web) ? v.web : "https://" + v.web)}" target="_blank" rel="noopener">Website</a>` : ""}${v.phone ? `<span class="mono" style="user-select:all">${esc(v.phone)}</span>` : ""}
+      <div class="actions"><button class="btn primary" type="button" data-pick="${i}">Host a game here</button><a class="btn" href="https://www.google.com/maps/dir/?api=1&destination=${v.lat},${v.lon}" target="_blank" rel="noopener">Directions</a><a class="btn" href="https://www.openstreetmap.org/${v.id}" target="_blank" rel="noopener">Map</a></div>
+    </div>`;
+}
+async function findPlaces() {
+  const out = $("#placesOut"), sp = sportById($("#p-sport").value), run = ++placesRun;
+  $("#placesTitle").textContent = sp.name + " places near you";
+  if (state.loc?.lat == null) {
+    out.innerHTML = `<div class="empty"><h3>Set your location first</h3><p>We search for ${esc(sp.name.toLowerCase())} spots around where you are.</p><button class="btn primary" type="button" id="pl-loc">Set location</button>${state.loc?.label ? mapSearchLinks(sp) : ""}</div>`;
+    $("#pl-loc").onclick = () => state.loc ? manualLoc() : useGeo(); return;
+  }
+  out.innerHTML = `<p class="status">Searching OpenStreetMap for ${esc(sp.name.toLowerCase())} spots near ${esc(state.loc.label)}…</p>`;
+  const radius = +$("#p-radius").value;
+  try {
+    let list = shapeCourts(await overpass(sp.osm, state.loc.lat, state.loc.lon, radius), sp);
+    if (sp.alt && list.length < 4) list = list.concat((shapeCourts(await overpass(sp.alt.osm, state.loc.lat, state.loc.lon, radius), sp, sp.alt.note)).filter(v => !list.some(x => x.id === v.id)));
+    if (run !== placesRun) return;
+    // Main sport first, then by distance.
+    list = list.sort((a, b) => (a.note ? 1 : 0) - (b.note ? 1 : 0) || a.d - b.d).slice(0, 12);
+    lastPlaces = list;
+    if (!list.length) { out.innerHTML = `<div class="empty"><h3>No ${esc(sp.name.toLowerCase())} spots on the map nearby</h3><p>Try a wider search, or look them up on a map.</p>${mapSearchLinks(sp)}</div>`; return; }
+    out.innerHTML = `<div class="venues">${list.map(venueCard).join("")}</div>`;
+    out.onclick = e => {
+      const b = e.target.closest("[data-pick]"); if (!b) return;
+      const v = list[+b.dataset.pick]; pickedVenue = { ...v, name: v.name || v.kind };
+      $("#h-sport").value = sp.id; onHostSport();
+      $("#h-venue").value = pickedVenue.name; $("#h-venue-hint").textContent = `Picked from the map${v.d != null ? ", " + fmtDist(v.d) + " away" : ""}.`;
+      if (v.price.cls === "free") $("#h-cost").value = "Free";
+      setView("host"); $("#h-date").focus();
+    };
+    for (let i = 0; i < list.length; i++) {
+      if (!list[i].needsName) continue;
+      if (run !== placesRun) return;
+      const name = await nameFromMap(list[i]);
+      if (name && run === placesRun) {
+        list[i].name = name;
+        const card = out.querySelector(`[data-vi="${i}"]`); if (card) card.outerHTML = venueCard(list[i], i);
+      }
+      await new Promise(r => setTimeout(r, 1100));
+    }
+  } catch {
+    if (run === placesRun) out.innerHTML = `<div class="empty"><h3>Couldn’t reach the map search</h3><p>The venue lookup needs an internet connection to OpenStreetMap. You can still search a map directly.</p>${mapSearchLinks(sp)}</div>`;
+  }
+}
+$("#p-go").onclick = findPlaces;
+$("#p-sport").onchange = findPlaces;
+
+/* ---------- views ---------- */
+function setView(v) {
+  state.view = v;
+  document.querySelectorAll(".tab").forEach(t => t.setAttribute("aria-selected", t.dataset.view === v));
+  ["find", "host", "places", "mine"].forEach(x => $("#view-" + x).hidden = x !== v);
+  $("#sportChips").hidden = v === "host" || v === "places" || v === "mine";
+  if (v === "places" && !$("#placesOut").innerHTML) findPlaces();
+  render();
+}
+document.querySelectorAll(".tab").forEach(t => t.onclick = () => setView(t.dataset.view));
+function render() {
+  if (state.view === "find") renderFind(); if (state.view === "mine") renderMine();
+  // Badge on My games: join requests waiting on games you host.
+  const n = [...state.signups.values()].filter(s => s.status === "pending" && state.games.get(s.gameId)?.hostKey === state.me.key && !isPast(state.games.get(s.gameId))).length;
+  $('.tab[data-view="mine"]').textContent = n ? `My games (${n})` : "My games";
+}
+listeners.add(render);
+listeners.add(showInvite);
+readInvite();
+window.addEventListener("hashchange", () => { readInvite(); showInvite(); });
+
+$("#locBtn").onclick = () => manualLoc();
+$("#nameBtn").onclick = () => askName();
+$("#bannerGeo").onclick = useGeo;
+$("#bannerManual").onclick = () => manualLoc();
+
+fillSportSelects(); onHostSport(); renderChips(); renderHeader(); renderFoot();
+local.load();
+connectShared();
+})();
+</script>
+
+</body>
+</html>

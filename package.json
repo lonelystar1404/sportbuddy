@@ -1,0 +1,9 @@
+{
+  "name": "sportbuddy",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Find people to play sports with nearby.",
+  "scripts": {
+    "start": "node server.js"
+  }
+}
