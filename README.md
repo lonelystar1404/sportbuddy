@@ -34,3 +34,7 @@ No Node? From the same folder, `python3 -m http.server 4747` works too.
 ## Data model
 - `games/{id}`: sport, date, time, durationMin, maxPlayers, maxBackups, venueName, lat, lon, area, level, cost, notes, hostKey, hostName, createdAt, visibility (`public` | `private`), approval (public games: host accepts each player), inviteCode (private games)
 - `signups/{gameId_userKey}`: gameId, key, name, joinedAt. status: `pending` (join request waiting for the host) or `declined`; no status means accepted. The first `maxPlayers` accepted signups by acceptance time are players; the rest are the backup list.
+
+## Community tab
+
+Members sign up with email and password (Firebase Authentication) to read and share posts with text, up to 4 photos, and an optional sport tag. Photos are resized in the browser and stored inside the post document, so no paid Firebase Storage plan is needed. Posts live in the Firestore `posts` collection; the rules let only signed-in members read posts, only the author create or delete their post, and any member like a post.

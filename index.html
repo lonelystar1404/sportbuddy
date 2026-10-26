@@ -177,6 +177,41 @@ form.host .full { grid-column: 1 / -1; }
 .search-row > * { flex: 1 1 180px; min-width: 0; }
 .search-row .btn { flex: 0 0 auto; }
 
+/* Community: members-only feed */
+.comm { max-width: 640px; display: grid; gap: 14px; }
+.auth-card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 18px; display: grid; gap: 12px; max-width: 420px; }
+.auth-card h2 { font-family: var(--font-display); font-size: 28px; margin: 0; }
+.auth-switch { display: flex; gap: 4px; border-bottom: 1px solid var(--line); }
+.auth-switch button { border: 0; background: none; padding: 8px 10px; font-family: var(--font-display); font-weight: 700; font-size: 18px; color: var(--muted); border-bottom: 3px solid transparent; cursor: pointer; }
+.auth-switch button[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--court); }
+.auth-card form { display: grid; gap: 10px; }
+input[type=email], input[type=password] { width: 100%; border: 1px solid var(--line); background: var(--surface); border-radius: 8px; padding: 8px 10px; min-width: 0; }
+.form-err { color: var(--bad); font-size: 13.5px; margin: 0; }
+.me-bar { display: flex; flex-wrap: wrap; gap: 6px 12px; align-items: center; font-size: 14px; color: var(--muted); }
+.me-bar b { color: var(--ink); }
+.composer { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 12px; display: grid; gap: 10px; }
+.composer textarea { min-height: 80px; }
+.composer .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.composer select { width: auto; flex: 0 1 auto; }
+.thumbs { display: flex; flex-wrap: wrap; gap: 8px; }
+.thumb { position: relative; width: 84px; height: 84px; border-radius: 8px; overflow: hidden; border: 1px solid var(--line); }
+.thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.thumb button { position: absolute; top: 3px; right: 3px; width: 22px; height: 22px; border-radius: 50%; border: 0; background: var(--ink); color: var(--bg); cursor: pointer; line-height: 1; }
+.post { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 14px 16px; display: grid; gap: 10px; min-width: 0; }
+.post-head { display: flex; gap: 10px; align-items: center; }
+.avatar { flex: none; width: 38px; height: 38px; border-radius: 50%; background: var(--court); color: var(--court-ink); display: grid; place-items: center; font-family: var(--font-display); font-weight: 800; font-size: 19px; }
+.post-head .who-line { min-width: 0; line-height: 1.25; }
+.post-head b { display: block; overflow-wrap: anywhere; }
+.post-text { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+.pics { display: grid; gap: 4px; grid-template-columns: repeat(2, minmax(0, 1fr)); border-radius: 8px; overflow: hidden; }
+.pics.one { grid-template-columns: minmax(0, 1fr); }
+.pics img { width: 100%; height: 100%; max-height: 420px; object-fit: cover; display: block; cursor: zoom-in; background: var(--soft); }
+.pics:not(.one) img { aspect-ratio: 1; }
+.post-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.like[aria-pressed="true"] { color: var(--court); border-color: var(--court); }
+.lightbox { position: fixed; inset: 0; background: rgba(0,0,0,.85); display: grid; place-items: center; z-index: 25; padding: 16px; cursor: zoom-out; }
+.lightbox img { max-width: 100%; max-height: 100%; border-radius: 6px; }
+
 .modal-bg { position: fixed; inset: 0; background: color-mix(in srgb, var(--ink) 55%, transparent); display: grid; place-items: center; z-index: 20; padding: 16px; }
 .modal { background: var(--surface); border-radius: 14px; padding: 20px; width: min(420px, 100%); display: grid; gap: 12px; }
 .modal h3 { font-family: var(--font-display); font-size: 24px; margin: 0; }
@@ -210,6 +245,7 @@ footer { font-size: 12.5px; color: var(--muted); padding-block: 0 32px; }
     <button class="tab" role="tab" data-view="host" aria-selected="false">Host a game</button>
     <button class="tab" role="tab" data-view="places" aria-selected="false">Places to play</button>
     <button class="tab" role="tab" data-view="mine" aria-selected="false">My games</button>
+    <button class="tab" role="tab" data-view="community" aria-selected="false">Community</button>
   </div>
 </nav>
 
@@ -292,12 +328,57 @@ footer { font-size: 12.5px; color: var(--muted); padding-block: 0 32px; }
       <div class="list-head"><h2>My games</h2><span class="muted" id="mineCount"></span></div>
       <div class="games" id="mineList"></div>
     </section>
+
+    <section id="view-community" hidden>
+      <div class="comm">
+        <div class="list-head"><h2>Community</h2><span class="muted">Share games, photos and news with other players.</span></div>
+        <div id="commAuth" hidden>
+          <div class="auth-card">
+            <div class="auth-switch" role="tablist">
+              <button type="button" role="tab" data-auth="login" aria-selected="true">Log in</button>
+              <button type="button" role="tab" data-auth="signup" aria-selected="false">Sign up</button>
+            </div>
+            <p class="muted" style="margin:0" id="authLead">Log in to see and share posts. Finding and hosting games still works without an account.</p>
+            <form id="loginForm">
+              <label class="f">Email<input type="email" id="li-email" autocomplete="email" required></label>
+              <label class="f">Password<input type="password" id="li-pass" autocomplete="current-password" required></label>
+              <p class="form-err" id="li-err" hidden></p>
+              <div class="actions"><button class="btn primary" type="submit">Log in</button><button class="linkish" type="button" id="li-forgot">Forgot password?</button></div>
+            </form>
+            <form id="signupForm" hidden>
+              <label class="f">Name other players see<input type="text" id="su-name" maxlength="40" autocomplete="nickname" required></label>
+              <label class="f">Email<input type="email" id="su-email" autocomplete="email" required></label>
+              <label class="f">Password (at least 6 characters)<input type="password" id="su-pass" minlength="6" autocomplete="new-password" required></label>
+              <p class="form-err" id="su-err" hidden></p>
+              <div class="actions"><button class="btn primary" type="submit">Create account</button></div>
+            </form>
+          </div>
+        </div>
+        <div id="commFeed" hidden>
+          <div class="me-bar"><span>Signed in as <b id="meName"></b></span><button class="linkish" type="button" id="logoutBtn">Log out</button></div>
+          <form class="composer" id="composer">
+            <label class="f" for="pc-text" style="position:absolute;left:-9999px">What's happening?</label>
+            <textarea id="pc-text" maxlength="2000" placeholder="Looking for a doubles partner Saturday? Share a photo from today's game…"></textarea>
+            <div class="thumbs" id="pc-thumbs"></div>
+            <div class="row">
+              <label class="btn" style="display:inline-flex;gap:6px;align-items:center"><svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M21 19V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2zM8.5 13.5l2.5 3 3.5-4.5 4.5 6H5l3.5-4.5z"/></svg>Photos<input type="file" id="pc-file" accept="image/*" multiple hidden></label>
+              <select id="pc-sport" aria-label="Sport (optional)"></select>
+              <span style="flex:1"></span>
+              <span class="status" id="pc-status"></span>
+              <button class="btn primary" type="submit" id="pc-submit">Post</button>
+            </div>
+          </form>
+          <div class="games" id="postList"></div>
+        </div>
+      </div>
+    </section>
   </div>
 </main>
 <footer><div class="wrap" id="footNote"></div></footer>
 
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
 <script>
 (() => {
 "use strict";
@@ -571,7 +652,7 @@ function manualLoc(why) {
 function renderHeader() {
   $("#locLabel").textContent = state.loc?.label || "Set your location";
   $("#nameLabel").textContent = state.me.name || "Add your name";
-  $("#locBanner").hidden = !!state.loc;
+  $("#locBanner").hidden = !!state.loc || state.view === "community";
 }
 function renderChips() {
   const all = [{ id: "all", name: "All sports" }, ...SPORTS];
@@ -750,6 +831,7 @@ function renderMine() {
 function fillSportSelects() {
   const opts = SPORTS.map(s => `<option value="${s.id}">${esc(s.name)}</option>`).join("");
   $("#h-sport").innerHTML = opts; $("#p-sport").innerHTML = opts;
+  if (!$("#pc-sport").options.length) $("#pc-sport").innerHTML = `<option value="">No sport tag</option>` + opts;
   const s = state.sport !== "all" ? state.sport : "pickleball";
   $("#h-sport").value = s; $("#p-sport").value = s;
 }
@@ -969,12 +1051,173 @@ async function findPlaces() {
 $("#p-go").onclick = findPlaces;
 $("#p-sport").onchange = findPlaces;
 
+/* ---------- community (needs an account) ---------- */
+// Accounts use Firebase Authentication (email + password). Posts live in Firestore `posts`;
+// photos are shrunk in the browser and stored inside the post, so no paid file storage is needed.
+const comm = { user: null, unsub: null, posts: [], pics: [], started: false };
+const fbReady = () => !!(window.firebase?.auth && firebase.apps.length);
+const AUTH_MSG = {
+  "auth/invalid-credential": "That email and password don't match.",
+  "auth/wrong-password": "That email and password don't match.",
+  "auth/user-not-found": "No account uses that email. Sign up instead?",
+  "auth/email-already-in-use": "An account already uses that email. Log in instead?",
+  "auth/invalid-email": "That doesn't look like an email address.",
+  "auth/weak-password": "Use at least 6 characters for the password.",
+  "auth/too-many-requests": "Too many tries. Wait a minute and try again.",
+  "auth/network-request-failed": "Couldn't connect. Check your internet and try again.",
+  "auth/operation-not-allowed": "Sign-in isn't switched on for this site yet.",
+  "auth/configuration-not-found": "Sign-in isn't switched on for this site yet.",
+};
+const authMsg = e => AUTH_MSG[e?.code] || "Something went wrong. Please try again.";
+function showErr(id, msg) { const el = $(id); el.textContent = msg || ""; el.hidden = !msg; }
+function startCommunity() {
+  if (comm.started) return;
+  if (!fbReady()) { $("#commAuth").hidden = false; $("#authLead").textContent = "The Community tab can't connect right now. Reload the page to try again."; return; }
+  comm.started = true;
+  firebase.auth().onAuthStateChanged(u => {
+    comm.user = u;
+    $("#commAuth").hidden = !!u; $("#commFeed").hidden = !u;
+    if (comm.unsub) { comm.unsub(); comm.unsub = null; }
+    if (!u) { comm.posts = []; $('[data-auth="login"]').click(); return; }
+    $("#meName").textContent = u.displayName || u.email;
+    if (!state.me.name && u.displayName) { state.me.name = u.displayName; prefs.name = u.displayName; savePrefs(); renderHeader(); }
+    $("#postList").innerHTML = `<p class="status">Loading posts…</p>`;
+    comm.unsub = firebase.firestore().collection("posts").orderBy("createdAt", "desc").limit(50).onSnapshot(snap => {
+      comm.posts = snap.docs.map(d => ({ ...d.data(), id: d.id })); renderPosts();
+    }, () => { $("#postList").innerHTML = `<div class="empty"><h3>Couldn't load posts</h3><p>Reload the page to try again.</p></div>`; });
+  });
+}
+document.querySelectorAll("[data-auth]").forEach(b => b.onclick = () => {
+  const signup = b.dataset.auth === "signup";
+  document.querySelectorAll("[data-auth]").forEach(x => x.setAttribute("aria-selected", x === b));
+  $("#loginForm").hidden = signup; $("#signupForm").hidden = !signup;
+  showErr("#li-err"); showErr("#su-err");
+  (signup ? $("#su-name") : $("#li-email")).focus();
+});
+$("#loginForm").addEventListener("submit", async e => {
+  e.preventDefault(); showErr("#li-err");
+  const btn = e.submitter || $("#loginForm .btn.primary"); btn.disabled = true;
+  try { await firebase.auth().signInWithEmailAndPassword($("#li-email").value.trim(), $("#li-pass").value); $("#li-pass").value = ""; }
+  catch (err) { showErr("#li-err", authMsg(err)); }
+  btn.disabled = false;
+});
+$("#li-forgot").onclick = async () => {
+  const email = $("#li-email").value.trim();
+  if (!email) { showErr("#li-err", "Type your email above, then tap Forgot password."); $("#li-email").focus(); return; }
+  try { await firebase.auth().sendPasswordResetEmail(email); showErr("#li-err"); toast("Check your email for a link to reset your password."); }
+  catch (err) { showErr("#li-err", authMsg(err)); }
+};
+$("#signupForm").addEventListener("submit", async e => {
+  e.preventDefault(); showErr("#su-err");
+  const name = $("#su-name").value.trim().slice(0, 40);
+  if (!name) { showErr("#su-err", "Add the name other players will see."); return; }
+  const btn = $("#signupForm .btn.primary"); btn.disabled = true;
+  try {
+    const cred = await firebase.auth().createUserWithEmailAndPassword($("#su-email").value.trim(), $("#su-pass").value);
+    await cred.user.updateProfile({ displayName: name });
+    $("#meName").textContent = name; $("#su-pass").value = "";
+    toast(`Welcome, ${name}.`);
+  } catch (err) { showErr("#su-err", authMsg(err)); }
+  btn.disabled = false;
+});
+$("#logoutBtn").onclick = () => firebase.auth().signOut();
+
+// Photos: up to 4 per post, resized so a whole post stays under Firestore's 1 MB document limit.
+async function shrink(file, max, q) {
+  const url = URL.createObjectURL(file);
+  try {
+    const img = await new Promise((ok, bad) => { const i = new Image(); i.onload = () => ok(i); i.onerror = bad; i.src = url; });
+    const k = Math.min(1, max / Math.max(img.naturalWidth, img.naturalHeight));
+    const c = document.createElement("canvas"); c.width = Math.round(img.naturalWidth * k); c.height = Math.round(img.naturalHeight * k);
+    c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
+    return c.toDataURL("image/jpeg", q);
+  } finally { URL.revokeObjectURL(url); }
+}
+function renderThumbs() {
+  $("#pc-thumbs").innerHTML = comm.pics.map((p, i) => `<div class="thumb"><img src="${p.data}" alt=""><button type="button" data-rm="${i}" aria-label="Remove photo">×</button></div>`).join("");
+}
+$("#pc-thumbs").onclick = e => { const b = e.target.closest("[data-rm]"); if (b) { comm.pics.splice(+b.dataset.rm, 1); renderThumbs(); } };
+$("#pc-file").onchange = async e => {
+  const files = [...e.target.files].filter(f => f.type.startsWith("image/")); e.target.value = "";
+  const room = 4 - comm.pics.length;
+  if (files.length > room) toast("You can add up to 4 photos per post.");
+  $("#pc-status").textContent = "Preparing photos…";
+  for (const f of files.slice(0, Math.max(0, room))) {
+    try { comm.pics.push({ file: f, data: await shrink(f, 1280, 0.72) }); } catch { toast("Couldn't read one of those photos."); }
+  }
+  $("#pc-status").textContent = ""; renderThumbs();
+};
+$("#composer").addEventListener("submit", async e => {
+  e.preventDefault();
+  const text = $("#pc-text").value.trim();
+  if (!text && !comm.pics.length) { $("#pc-text").focus(); return; }
+  const u = comm.user; if (!u) return;
+  $("#pc-submit").disabled = true; $("#pc-status").textContent = "Posting…";
+  try {
+    let images = comm.pics.map(p => p.data);
+    // Shrink further if the photos together are too big for one post.
+    for (const [max, q] of [[1024, 0.65], [800, 0.6], [640, 0.55]]) {
+      if (images.reduce((n, s) => n + s.length, 0) < 900000) break;
+      images = await Promise.all(comm.pics.map(p => shrink(p.file, max, q)));
+    }
+    await firebase.firestore().collection("posts").add({
+      uid: u.uid, name: u.displayName || u.email.split("@")[0], text, images, sport: $("#pc-sport").value || "",
+      likes: [], createdAt: Date.now(),
+    });
+    $("#pc-text").value = ""; $("#pc-sport").value = ""; comm.pics = []; renderThumbs();
+    $("#pc-status").textContent = "";
+  } catch {
+    $("#pc-status").textContent = "Couldn't post. Check your connection and try again.";
+  }
+  $("#pc-submit").disabled = false;
+});
+function ago(t) {
+  const s = Math.max(0, (Date.now() - t) / 1000);
+  if (s < 60) return "just now"; if (s < 3600) return Math.floor(s / 60) + " min ago"; if (s < 86400) return Math.floor(s / 3600) + " h ago";
+  return new Date(t).toLocaleDateString([], { month: "short", day: "numeric", year: new Date(t).getFullYear() === new Date().getFullYear() ? undefined : "numeric" });
+}
+function renderPosts() {
+  const me = comm.user?.uid;
+  if (!comm.posts.length) { $("#postList").innerHTML = `<div class="empty"><h3>No posts yet</h3><p>Be the first to say hi to other players.</p></div>`; return; }
+  $("#postList").innerHTML = comm.posts.map(p => {
+    const liked = (p.likes || []).includes(me), n = (p.likes || []).length, imgs = p.images || [], sp = p.sport ? sportById(p.sport) : null;
+    return `<article class="post" data-pid="${esc(p.id)}">
+      <div class="post-head"><div class="avatar" aria-hidden="true">${esc((p.name || "?").trim()[0]?.toUpperCase() || "?")}</div>
+        <div class="who-line"><b>${esc(p.name)}</b><span class="muted" style="font-size:13px">${ago(p.createdAt)}${sp ? " · " + esc(sp.name) : ""}</span></div></div>
+      ${p.text ? `<p class="post-text">${esc(p.text)}</p>` : ""}
+      ${imgs.length ? `<div class="pics${imgs.length === 1 ? " one" : ""}">${imgs.map(s => /^data:image\/(jpeg|png|webp);base64,/.test(s) ? `<img src="${s}" alt="Photo shared by ${esc(p.name)}" loading="lazy">` : "").join("")}</div>` : ""}
+      <div class="post-actions"><button class="btn like" type="button" data-like aria-pressed="${liked}">${liked ? "Liked" : "Like"}${n ? " · " + n : ""}</button>
+        ${p.uid === me ? `<button class="btn danger" type="button" data-del>Delete</button>` : ""}</div>
+    </article>`;
+  }).join("");
+}
+$("#postList").onclick = async e => {
+  const img = e.target.closest(".pics img");
+  if (img) { const lb = document.createElement("div"); lb.className = "lightbox"; lb.innerHTML = `<img src="${img.src}" alt="">`; lb.onclick = () => lb.remove(); document.body.appendChild(lb); return; }
+  const card = e.target.closest("[data-pid]"); if (!card || !comm.user) return;
+  const ref = firebase.firestore().collection("posts").doc(card.dataset.pid), uid = comm.user.uid;
+  try {
+    if (e.target.closest("[data-like]")) {
+      const p = comm.posts.find(x => x.id === card.dataset.pid);
+      const F = firebase.firestore.FieldValue;
+      await ref.update({ likes: (p?.likes || []).includes(uid) ? F.arrayRemove(uid) : F.arrayUnion(uid) });
+    } else if (e.target.closest("[data-del]")) {
+      const b = e.target.closest("[data-del]");
+      if (!b.dataset.confirm) { b.dataset.confirm = "1"; b.textContent = "Tap again to delete"; setTimeout(() => { if (b.isConnected) { delete b.dataset.confirm; b.textContent = "Delete"; } }, 4000); return; }
+      await ref.delete(); toast("Post deleted.");
+    }
+  } catch { toast("That didn't save. Check your connection and try again."); }
+};
+setInterval(() => { if (state.view === "community" && comm.posts.length) renderPosts(); }, 60000);
+
 /* ---------- views ---------- */
 function setView(v) {
   state.view = v;
   document.querySelectorAll(".tab").forEach(t => t.setAttribute("aria-selected", t.dataset.view === v));
-  ["find", "host", "places", "mine"].forEach(x => $("#view-" + x).hidden = x !== v);
-  $("#sportChips").hidden = v === "host" || v === "places" || v === "mine";
+  ["find", "host", "places", "mine", "community"].forEach(x => $("#view-" + x).hidden = x !== v);
+  $("#sportChips").hidden = v === "host" || v === "places" || v === "mine" || v === "community";
+  if (v === "community") startCommunity();
+  renderHeader();
   if (v === "places" && !$("#placesOut").innerHTML) findPlaces();
   render();
 }
