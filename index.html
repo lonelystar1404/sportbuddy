@@ -816,11 +816,33 @@ const PARENT2 = '["name"]["amenity"~"^(school|college|university|community_centr
 async function overpass(filter, lat, lon, radius) {
   const q = `[out:json][timeout:25];(nwr${filter}(around:${radius},${lat},${lon});)->.c;.c out center tags 150;`
     + `(way${PARENT}(around.c:250);relation${PARENT}(around.c:250);way${PARENT2}(around.c:250);relation${PARENT2}(around.c:250););out bb tags 300;`;
-  const r = await fetch("https://overpass-api.de/api/interpreter", { method: "POST", body: "data=" + encodeURIComponent(q), headers: { "Content-Type": "application/x-www-form-urlencoded" } });
-  if (!r.ok) throw new Error("overpass " + r.status);
-  const els = (await r.json()).elements || [];
+  const key = "sportbuddy.places." + [filter, lat.toFixed(3), lon.toFixed(3), radius].join("|");
+  const hit = cacheGet(key);
+  if (hit) return hit;
+  const els = (await raceOverpass(q)).elements || [];
   // Courts carry `center` (or are nodes); parents carry `bounds`.
-  return { courts: els.filter(e => !e.bounds || e.center), parents: els.filter(e => e.bounds && !e.center && e.tags?.name) };
+  const res = { courts: els.filter(e => !e.bounds || e.center), parents: els.filter(e => e.bounds && !e.center && e.tags?.name) };
+  cacheSet(key, res);
+  return res;
+}
+// The public Overpass servers vary a lot in speed, so ask several at once and use whichever answers first.
+const OVERPASS = ["https://overpass-api.de/api/interpreter", "https://overpass.private.coffee/api/interpreter", "https://overpass.kumi.systems/api/interpreter"];
+function raceOverpass(q) {
+  const ctrls = OVERPASS.map(() => new AbortController());
+  return Promise.any(OVERPASS.map(async (url, i) => {
+    const r = await fetch(url, { method: "POST", body: "data=" + encodeURIComponent(q), headers: { "Content-Type": "application/x-www-form-urlencoded" }, signal: ctrls[i].signal });
+    if (!r.ok) throw new Error("overpass " + r.status);
+    const j = await r.json();
+    ctrls.forEach((c, k) => k !== i && c.abort());
+    return j;
+  }));
+}
+// Map results change rarely, so keep them for a day in this browser.
+const CACHE_MS = 24 * 3600 * 1000;
+function cacheGet(k) { try { const v = JSON.parse(localStorage.getItem(k)); return v && Date.now() - v.t < CACHE_MS ? v.d : null; } catch { return null; } }
+function cacheSet(k, d) {
+  try { localStorage.setItem(k, JSON.stringify({ t: Date.now(), d })); }
+  catch { try { Object.keys(localStorage).filter(x => x.startsWith("sportbuddy.places.")).forEach(x => localStorage.removeItem(x)); } catch {} }
 }
 function bboxDist(b, lat, lon) {
   const dy = Math.max(b.minlat - lat, 0, lat - b.maxlat) * 111000;
@@ -870,6 +892,14 @@ function shapeCourts(found, sp, note) {
 }
 // For courts with no named place around them, ask Nominatim what is there (one request per second, per its usage policy).
 async function nameFromMap(v) {
+  const key = "sportbuddy.placename." + v.lat.toFixed(4) + "," + v.lon.toFixed(4);
+  const hit = cacheGet(key);
+  if (hit != null) return { name: hit, cached: true };
+  const name = await lookupName(v);
+  if (name) cacheSet(key, name);
+  return { name, cached: false };
+}
+async function lookupName(v) {
   try {
     const r = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&zoom=17&lat=${v.lat}&lon=${v.lon}`);
     const j = await r.json(), a = j.address || {};
@@ -901,8 +931,13 @@ async function findPlaces() {
   out.innerHTML = `<p class="status">Searching OpenStreetMap for ${esc(sp.name.toLowerCase())} spots near ${esc(state.loc.label)}…</p>`;
   const radius = +$("#p-radius").value;
   try {
-    let list = shapeCourts(await overpass(sp.osm, state.loc.lat, state.loc.lon, radius), sp);
-    if (sp.alt && list.length < 4) list = list.concat((shapeCourts(await overpass(sp.alt.osm, state.loc.lat, state.loc.lon, radius), sp, sp.alt.note)).filter(v => !list.some(x => x.id === v.id)));
+    // Fetch the fallback sport (e.g. tennis courts for pickleball) at the same time instead of after.
+    const [main, alt] = await Promise.all([
+      overpass(sp.osm, state.loc.lat, state.loc.lon, radius),
+      sp.alt ? overpass(sp.alt.osm, state.loc.lat, state.loc.lon, radius).catch(() => null) : null,
+    ]);
+    let list = shapeCourts(main, sp);
+    if (alt && list.length < 4) list = list.concat(shapeCourts(alt, sp, sp.alt.note).filter(v => !list.some(x => x.id === v.id)));
     if (run !== placesRun) return;
     // Main sport first, then by distance.
     list = list.sort((a, b) => (a.note ? 1 : 0) - (b.note ? 1 : 0) || a.d - b.d).slice(0, 12);
@@ -920,12 +955,12 @@ async function findPlaces() {
     for (let i = 0; i < list.length; i++) {
       if (!list[i].needsName) continue;
       if (run !== placesRun) return;
-      const name = await nameFromMap(list[i]);
+      const { name, cached } = await nameFromMap(list[i]);
       if (name && run === placesRun) {
         list[i].name = name;
         const card = out.querySelector(`[data-vi="${i}"]`); if (card) card.outerHTML = venueCard(list[i], i);
       }
-      await new Promise(r => setTimeout(r, 1100));
+      if (!cached) await new Promise(r => setTimeout(r, 1100));
     }
   } catch {
     if (run === placesRun) out.innerHTML = `<div class="empty"><h3>Couldn’t reach the map search</h3><p>The venue lookup needs an internet connection to OpenStreetMap. You can still search a map directly.</p>${mapSearchLinks(sp)}</div>`;
