@@ -29,7 +29,7 @@ No Node? From the same folder, `python3 -m http.server 4747` works too.
 
 ## Where games are stored
 - **In the Claude preview**: games are in a shared database attached to the page, so everyone the page is shared with (as Contributor) sees the same games.
-- **Standalone `index.html`**: games are saved in the visitor's browser only (localStorage). To share games between people on a public site, connect a backend such as Firebase or Supabase: the `store` object in the script (putGame, deleteGame, putSignup, deleteSignup, plus two live subscriptions) is the only part to swap.
+- **Website (GitHub Pages or localhost)**: games and join requests are stored in Firebase Firestore (project `sportbuddy-ec851`), so everyone who opens the site sees the same games, with live updates. If Firebase can't be reached, the page falls back to saving games in the visitor's browser (localStorage). The Firestore rules only allow reading and writing the `games` and `signups` collections.
 
 ## Data model
 - `games/{id}`: sport, date, time, durationMin, maxPlayers, maxBackups, venueName, lat, lon, area, level, cost, notes, hostKey, hostName, createdAt, visibility (`public` | `private`), approval (public games: host accepts each player), inviteCode (private games)

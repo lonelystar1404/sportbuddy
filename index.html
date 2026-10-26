@@ -296,6 +296,8 @@ footer { font-size: 12.5px; color: var(--muted); padding-block: 0 32px; }
 </main>
 <footer><div class="wrap" id="footNote"></div></footer>
 
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
 <script>
 (() => {
 "use strict";
@@ -385,7 +387,38 @@ const store = {
 };
 window.addEventListener("storage", e => { if (!db && e.key === LOCAL_KEY) local.load(); });
 
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyAQ3WSqzbBETNuIeOP6Q_8Rkib9cTw_2sI",
+  authDomain: "sportbuddy-ec851.firebaseapp.com",
+  projectId: "sportbuddy-ec851",
+  storageBucket: "sportbuddy-ec851.firebasestorage.app",
+  messagingSenderId: "9978593371",
+  appId: "1:9978593371:web:b826a321870754fba07f7e",
+};
+function listen(d) {
+  db = d; state.mode = "shared";
+  state.games = new Map(); state.signups = new Map();
+  db.collection("games").onSnapshot(snap => {
+    const m = new Map(); snap.docs.forEach(doc => m.set(doc.id, { ...doc.data(), id: doc.id })); state.games = m; emit();
+  }, () => toast("Lost connection to shared games. Reload to retry."));
+  db.collection("signups").onSnapshot(snap => {
+    const m = new Map(); snap.docs.forEach(doc => m.set(doc.id, { ...doc.data(), id: doc.id })); state.signups = m; emit();
+  }, () => {});
+  renderFoot(); emit();
+}
+function connectFirebase() {
+  if (!window.firebase?.firestore) return false;
+  try {
+    const app = firebase.apps.length ? firebase.app() : firebase.initializeApp(FIREBASE_CONFIG);
+    const fs = app.firestore();
+    try { fs.settings({ ignoreUndefinedProperties: true }); } catch {}
+    listen(fs);
+    return true;
+  } catch { return false; }
+}
+
 async function connectShared() {
+  if (connectFirebase()) return;
   if (!window.claude || typeof window.claude.use !== "function") return;
   try {
     const [d, user] = await Promise.all([window.claude.use("db"), window.claude.use("user")]);
@@ -394,15 +427,7 @@ async function connectShared() {
       try { const id = await user.id(); if (id) { state.me.key = "u" + safeId(id); } } catch {}
       try { const w = await user.can("data.write"); if (w === false) state.canWrite = false; } catch {}
     }
-    db = d; state.mode = "shared";
-    state.games = new Map(); state.signups = new Map();
-    db.collection("games").onSnapshot(snap => {
-      const m = new Map(); snap.docs.forEach(doc => m.set(doc.id, { ...doc.data(), id: doc.id })); state.games = m; emit();
-    }, err => toast("Lost connection to shared games. Reload to retry."));
-    db.collection("signups").onSnapshot(snap => {
-      const m = new Map(); snap.docs.forEach(doc => m.set(doc.id, { ...doc.data(), id: doc.id })); state.signups = m; emit();
-    }, () => {});
-    renderFoot(); emit();
+    listen(d);
   } catch {}
 }
 
@@ -561,7 +586,7 @@ $("#sportChips").addEventListener("click", e => {
 function renderFoot() {
   $("#footNote").textContent = state.mode === "shared"
     ? "Games are shared with everyone who opens this page. Your name and location preference stay in this browser."
-    : "Games are saved in this browser. To share games with other people, SportBuddy needs a shared database (see the README).";
+    : "Couldn’t reach the shared game list, so games are saved in this browser only. Reload to try again.";
 }
 
 /* ---------- calendar ---------- */
