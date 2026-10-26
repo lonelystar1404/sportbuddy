@@ -674,12 +674,21 @@ function modal(html, onMount) {
   const f = bg.querySelector("input, button"); f && f.focus();
 }
 function askName(then) {
+  const acct = signedIn();
   modal(`<h3>What should players call you?</h3>
-    <p class="muted" style="margin:0">No account needed. The host sees this name on the roster.</p>
+    <p class="muted" style="margin:0">${acct ? "This is your account name. Changing it here updates your account too." : "No account needed. The host sees this name on the roster."}</p>
     <input type="text" id="nm-in" maxlength="40" placeholder="e.g. Thien" value="${esc(state.me.name)}">
-    <div class="actions"><button class="btn primary" id="nm-ok">Save</button><button class="btn" id="nm-skip">Continue as ${esc("Guest " + state.me.key.slice(-4).toUpperCase())}</button></div>`,
+    <div class="actions"><button class="btn primary" id="nm-ok">Save</button><button class="btn" id="nm-skip">${acct ? "Cancel" : esc("Continue as Guest " + state.me.key.slice(-4).toUpperCase())}</button></div>`,
     (el, close) => {
-      const done = save => { if (save) { state.me.name = $("#nm-in", el).value.trim().slice(0, 40); prefs.name = state.me.name; savePrefs(); } close(); renderHeader(); render(); then && then(); };
+      const done = save => {
+        const name = $("#nm-in", el).value.trim().slice(0, 40);
+        if (save && acct && !name) { $("#nm-in", el).focus(); return; }
+        if (save) {
+          state.me.name = name; prefs.name = name; savePrefs();
+          if (acct) firebase.auth().currentUser.updateProfile({ displayName: name }).then(renderMe, () => toast("Couldn't update your account name. Try again."));
+        }
+        close(); renderHeader(); render(); then && then();
+      };
       $("#nm-ok", el).onclick = () => done(true);
       $("#nm-in", el).onkeydown = e => { if (e.key === "Enter") done(true); };
       $("#nm-skip", el).onclick = () => done(false);
@@ -860,7 +869,7 @@ async function onCardClick(e) {
         await store.putSignup({ ...base, joinedAt: Date.now() });
         toast(r.players.length < +g.maxPlayers ? "You’re in. See you there." : "You’re on the backup list.");
       };
-      if (!state.me.name && !prefs.askedName) { prefs.askedName = true; savePrefs(); askName(doJoin); } else await doJoin();
+      if (!signedIn() && !state.me.name && !prefs.askedName) { prefs.askedName = true; savePrefs(); askName(doJoin); } else await doJoin();
     } else if (act === "accept" || act === "decline") {
       const s = state.signups.get(b.dataset.sid); if (!s || g.hostKey !== state.me.key) return;
       const { status, ...rest } = s;
@@ -958,7 +967,7 @@ $("#hostForm").addEventListener("submit", async e => {
       $("#h-status").textContent = err?.code === "invalid_argument" ? "You don’t have permission to post games on this page." : "Couldn’t post the game. Check your connection and try again.";
     } finally { $("#h-submit").disabled = false; }
   };
-  if (!state.me.name && !prefs.askedName) { prefs.askedName = true; savePrefs(); askName(post); } else post();
+  if (!signedIn() && !state.me.name && !prefs.askedName) { prefs.askedName = true; savePrefs(); askName(post); } else post();
 });
 
 /* ---------- places (OpenStreetMap Overpass) ---------- */
@@ -1175,7 +1184,6 @@ function startCommunity() {
     comm.cunsub.forEach(f => f()); comm.cunsub.clear(); comm.comments.clear(); comm.els.clear(); comm.open.clear();
     $("#postList").innerHTML = "";
     if (!u) { comm.posts = []; $('[data-auth="login"]').click(); return; }
-    if (!state.me.name && u.displayName) { state.me.name = u.displayName; prefs.name = u.displayName; savePrefs(); renderHeader(); }
     renderMe();
     $("#postList").innerHTML = `<p class="status">Loading posts…</p>`;
     comm.unsub = posts().orderBy("createdAt", "desc").limit(50).onSnapshot(snap => {
@@ -1193,6 +1201,15 @@ function renderMe() {
   $("#stPosts").textContent = mine.length;
   $("#stLikes").textContent = mine.reduce((s, p) => s + (p.likes || []).length, 0);
 }
+
+// When someone is logged in, their account name is the name used for hosting, joining, posts and comments.
+const signedIn = () => !!(window.firebase?.auth && firebase.apps.length && firebase.auth().currentUser);
+function syncAccountName() {
+  const u = signedIn() && firebase.auth().currentUser, n = u?.displayName;
+  if (!n || state.me.name === n) return;
+  state.me.name = n; prefs.name = n; prefs.askedName = true; savePrefs(); renderHeader(); render();
+}
+function watchAccount() { if (window.firebase?.auth && firebase.apps.length) firebase.auth().onAuthStateChanged(syncAccountName); }
 
 /* sign up / log in */
 document.querySelectorAll("[data-auth]").forEach(b => b.onclick = () => {
@@ -1223,7 +1240,7 @@ $("#signupForm").addEventListener("submit", async e => {
   try {
     const cred = await firebase.auth().createUserWithEmailAndPassword($("#su-email").value.trim(), $("#su-pass").value);
     await cred.user.updateProfile({ displayName: name });
-    renderMe(); $("#su-pass").value = "";
+    renderMe(); syncAccountName(); $("#su-pass").value = "";
     toast(`Welcome, ${name}.`);
   } catch (err) { showErr("#su-err", authMsg(err)); }
   btn.disabled = false;
@@ -1487,6 +1504,7 @@ $("#bannerManual").onclick = () => manualLoc();
 fillSportSelects(); onHostSport(); renderChips(); renderHeader(); renderFoot();
 local.load();
 connectShared();
+watchAccount();
 })();
 </script>
 
