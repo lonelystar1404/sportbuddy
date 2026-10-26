@@ -37,4 +37,8 @@ No Node? From the same folder, `python3 -m http.server 4747` works too.
 
 ## Community tab
 
-Members sign up with email and password (Firebase Authentication) to read and share posts with text, up to 4 photos, and an optional sport tag. Photos are resized in the browser and stored inside the post document, so no paid Firebase Storage plan is needed. Posts live in the Firestore `posts` collection; the rules let only signed-in members read posts, only the author create or delete their post, and any member like a post.
+Members sign up with email and password (Firebase Authentication) to read and share posts with text, up to 4 photos, and an optional sport tag, then like (or double-tap a photo), comment, and filter the feed by sport or person. Photos are resized in the browser and stored inside the post document, so no paid Firebase Storage plan is needed. Posts live in the Firestore `posts` collection and comments in `posts/{id}/comments`; only signed-in members can read them.
+
+## Light and dark mode
+
+The header button switches between Auto (follows the device), Light, and Dark. The choice is remembered in the browser.

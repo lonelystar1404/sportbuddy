@@ -6,6 +6,7 @@
 <style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
 </head>
 <body>
+<script>try { const t = JSON.parse(localStorage.getItem("sportbuddy.prefs.v1") || "{}").theme; if (t === "light" || t === "dark") document.documentElement.dataset.theme = t; } catch {}</script>
 <title>SportBuddy</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -39,6 +40,7 @@
     --ok: #6cc28a; --warn: #e5a54a; --bad: #ef7b70; color-scheme: dark;
   }
 }
+:root[data-theme="light"] { color-scheme: light; }
 :root[data-theme="dark"] {
   --bg: #0f1622; --surface: #172131; --ink: #e7ecf3; --muted: #9aa6b8; --line: #2a3648;
   --court: #5b93e6; --court-ink: #0b1220; --ball: #d8e83a; --ball-ink: #1b2a0a; --soft: #1d2a40;
@@ -50,7 +52,7 @@ button, input, select, textarea { font: inherit; color: inherit; }
 :focus-visible { outline: 2px solid var(--court); outline-offset: 2px; }
 .wrap { max-width: 1120px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
 
-header.top { background: var(--ink); color: var(--bg); }
+header.top { --bg: #f3f5f1; background: #15233b; color: var(--bg); } /* the scoreboard header stays dark in both themes */
 header.top .wrap { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px; padding-block: 14px; }
 .brand { font-family: var(--font-display); font-weight: 800; font-size: 30px; letter-spacing: .01em; line-height: 1; display: flex; align-items: center; gap: 10px; margin: 0; }
 .brand svg { flex: none; }
@@ -61,8 +63,9 @@ header.top .wrap { display: flex; flex-wrap: wrap; align-items: center; gap: 12p
 .pill span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 220px; }
 
 nav.tabs { border-bottom: 1px solid var(--line); background: var(--surface); position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; }
-body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--ink); }
-nav.tabs .wrap { display: flex; gap: 4px; overflow-x: auto; }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: #15233b; }
+nav.tabs .wrap { display: flex; gap: 4px; overflow-x: auto; scrollbar-width: none; }
+@media (max-width: 600px) { .tab { font-size: 17px; padding: 11px 9px; } nav.tabs .wrap { -webkit-mask-image: linear-gradient(90deg, #000 85%, transparent); mask-image: linear-gradient(90deg, #000 85%, transparent); } }
 .tab { border: 0; background: none; padding: 12px 14px; font-family: var(--font-display); font-weight: 700; font-size: 19px; letter-spacing: .02em; color: var(--muted); border-bottom: 3px solid transparent; cursor: pointer; white-space: nowrap; }
 .tab[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--court); }
 
@@ -177,40 +180,98 @@ form.host .full { grid-column: 1 / -1; }
 .search-row > * { flex: 1 1 180px; min-width: 0; }
 .search-row .btn { flex: 0 0 auto; }
 
-/* Community: members-only feed */
-.comm { max-width: 640px; display: grid; gap: 14px; }
-.auth-card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 18px; display: grid; gap: 12px; max-width: 420px; }
-.auth-card h2 { font-family: var(--font-display); font-size: 28px; margin: 0; }
-.auth-switch { display: flex; gap: 4px; border-bottom: 1px solid var(--line); }
-.auth-switch button { border: 0; background: none; padding: 8px 10px; font-family: var(--font-display); font-weight: 700; font-size: 18px; color: var(--muted); border-bottom: 3px solid transparent; cursor: pointer; }
-.auth-switch button[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--court); }
+/* Community: a members-only social feed (feed column + profile/filter rail on wide screens) */
+.social { display: grid; grid-template-columns: minmax(0, 600px) 300px; gap: 28px; justify-content: center; align-items: start; }
+@media (max-width: 980px) { .social { grid-template-columns: minmax(0, 600px); } .rail { display: none; } }
+.feed { display: grid; gap: 16px; min-width: 0; }
+.rail { position: sticky; top: 72px; display: grid; gap: 14px; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; }
+.auth-wrap { display: grid; place-items: center; padding: 8px 0 24px; }
+.auth-card { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 22px; display: grid; gap: 12px; width: min(400px, 100%); }
+.auth-card .hero { text-align: center; display: grid; gap: 4px; justify-items: center; }
+.auth-card .hero h2 { font-family: var(--font-display); font-size: 30px; margin: 0; }
+.auth-switch { display: grid; grid-template-columns: 1fr 1fr; background: var(--soft); border-radius: 10px; padding: 3px; }
+.auth-switch button { border: 0; background: none; padding: 8px; font-weight: 600; color: var(--muted); border-radius: 8px; cursor: pointer; }
+.auth-switch button[aria-selected="true"] { background: var(--surface); color: var(--ink); box-shadow: 0 1px 2px rgba(0,0,0,.12); }
 .auth-card form { display: grid; gap: 10px; }
-input[type=email], input[type=password] { width: 100%; border: 1px solid var(--line); background: var(--surface); border-radius: 8px; padding: 8px 10px; min-width: 0; }
+.auth-card .btn.primary { width: 100%; padding: 10px; }
+input[type=email], input[type=password] { width: 100%; border: 1px solid var(--line); background: var(--surface); border-radius: 8px; padding: 9px 11px; min-width: 0; }
 .form-err { color: var(--bad); font-size: 13.5px; margin: 0; }
-.me-bar { display: flex; flex-wrap: wrap; gap: 6px 12px; align-items: center; font-size: 14px; color: var(--muted); }
-.me-bar b { color: var(--ink); }
-.composer { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 12px; display: grid; gap: 10px; }
-.composer textarea { min-height: 80px; }
-.composer .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
-.composer select { width: auto; flex: 0 1 auto; }
+
+.av { flex: none; width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; color: #fff; font-family: var(--font-display); font-weight: 800; font-size: 19px; background: var(--c, var(--court)); box-shadow: 0 0 0 2px var(--surface), 0 0 0 4px var(--ball); }
+.av.sm { width: 30px; height: 30px; font-size: 14px; box-shadow: none; }
+.av.lg { width: 64px; height: 64px; font-size: 30px; }
+
+.composer { padding: 14px; display: grid; gap: 10px; }
+.composer .top { display: flex; gap: 12px; align-items: flex-start; }
+.composer textarea { border: 0; background: var(--soft); border-radius: 18px; padding: 10px 14px; min-height: 44px; resize: none; overflow: hidden; }
+.composer .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; border-top: 1px solid var(--line); padding-top: 10px; }
+.composer select { width: auto; flex: 0 1 auto; border-radius: 999px; padding: 6px 10px; font-size: 13.5px; }
+.ghost { display: inline-flex; gap: 6px; align-items: center; border: 0; background: none; border-radius: 999px; padding: 7px 12px; cursor: pointer; font-weight: 600; font-size: 14px; color: var(--muted); }
+.ghost:hover { background: var(--soft); color: var(--ink); }
 .thumbs { display: flex; flex-wrap: wrap; gap: 8px; }
-.thumb { position: relative; width: 84px; height: 84px; border-radius: 8px; overflow: hidden; border: 1px solid var(--line); }
+.thumb { position: relative; width: 84px; height: 84px; border-radius: 10px; overflow: hidden; border: 1px solid var(--line); }
 .thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
-.thumb button { position: absolute; top: 3px; right: 3px; width: 22px; height: 22px; border-radius: 50%; border: 0; background: var(--ink); color: var(--bg); cursor: pointer; line-height: 1; }
-.post { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 14px 16px; display: grid; gap: 10px; min-width: 0; }
-.post-head { display: flex; gap: 10px; align-items: center; }
-.avatar { flex: none; width: 38px; height: 38px; border-radius: 50%; background: var(--court); color: var(--court-ink); display: grid; place-items: center; font-family: var(--font-display); font-weight: 800; font-size: 19px; }
-.post-head .who-line { min-width: 0; line-height: 1.25; }
-.post-head b { display: block; overflow-wrap: anywhere; }
-.post-text { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; }
-.pics { display: grid; gap: 4px; grid-template-columns: repeat(2, minmax(0, 1fr)); border-radius: 8px; overflow: hidden; }
-.pics.one { grid-template-columns: minmax(0, 1fr); }
-.pics img { width: 100%; height: 100%; max-height: 420px; object-fit: cover; display: block; cursor: zoom-in; background: var(--soft); }
-.pics:not(.one) img { aspect-ratio: 1; }
-.post-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
-.like[aria-pressed="true"] { color: var(--court); border-color: var(--court); }
-.lightbox { position: fixed; inset: 0; background: rgba(0,0,0,.85); display: grid; place-items: center; z-index: 25; padding: 16px; cursor: zoom-out; }
+.thumb button { position: absolute; top: 4px; right: 4px; width: 22px; height: 22px; border-radius: 50%; border: 0; background: rgba(0,0,0,.65); color: #fff; cursor: pointer; line-height: 1; }
+
+.chips-row { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 2px; scrollbar-width: none; }
+.chips-row .chip { white-space: nowrap; }
+.filter-note { display: flex; gap: 10px; align-items: center; padding: 10px 14px; font-size: 14px; }
+
+.post { overflow: hidden; min-width: 0; }
+.post-head { display: flex; gap: 10px; align-items: center; padding: 12px 14px; }
+.post-head .who-line { min-width: 0; flex: 1; line-height: 1.25; }
+.name-btn { border: 0; background: none; padding: 0; font-weight: 700; cursor: pointer; text-align: left; overflow-wrap: anywhere; }
+.name-btn:hover { text-decoration: underline; }
+.meta { font-size: 12.5px; color: var(--muted); display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+.sport-pill { font-size: 11.5px; font-weight: 600; padding: 1px 8px; border-radius: 999px; background: var(--soft); color: var(--ink); }
+.more { border: 0; background: none; width: 34px; height: 34px; border-radius: 50%; cursor: pointer; color: var(--muted); display: grid; place-items: center; }
+.more:hover { background: var(--soft); }
+.post-text { margin: 0; padding: 0 14px 12px; white-space: pre-wrap; overflow-wrap: anywhere; font-size: 15.5px; }
+.media { position: relative; background: #000; }
+.slides { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; }
+.slides::-webkit-scrollbar { display: none; }
+.slides img { flex: 0 0 100%; width: 100%; aspect-ratio: 4 / 5; max-height: 640px; object-fit: cover; scroll-snap-align: center; display: block; user-select: none; -webkit-user-drag: none; }
+.media .count { position: absolute; top: 10px; right: 10px; background: rgba(0,0,0,.6); color: #fff; font-size: 12px; padding: 2px 8px; border-radius: 999px; font-variant-numeric: tabular-nums; }
+.dots { display: flex; gap: 5px; justify-content: center; padding-top: 10px; }
+.dots i { width: 6px; height: 6px; border-radius: 50%; background: var(--line); }
+.dots i.on { background: var(--court); }
+.burst { position: absolute; inset: 0; display: grid; place-items: center; pointer-events: none; }
+.burst svg { width: 96px; height: 96px; color: #fff; filter: drop-shadow(0 2px 10px rgba(0,0,0,.4)); animation: pop .8s ease-out forwards; }
+@keyframes pop { 0% { transform: scale(.3); opacity: 0; } 25% { transform: scale(1.1); opacity: 1; } 60% { transform: scale(1); opacity: 1; } 100% { transform: scale(1); opacity: 0; } }
+.bar { display: flex; align-items: center; gap: 2px; padding: 6px 8px 0; }
+.icon { border: 0; background: none; width: 40px; height: 40px; border-radius: 50%; cursor: pointer; display: grid; place-items: center; color: var(--ink); }
+.icon:hover { background: var(--soft); }
+.icon svg { width: 25px; height: 25px; }
+.icon.liked { color: #e0245e; }
+@media (prefers-reduced-motion: no-preference) { .icon.liked svg { animation: beat .3s ease-out; } @keyframes beat { 50% { transform: scale(1.25); } } }
+.likes { padding: 0 14px; font-weight: 700; font-size: 14px; }
+.comments { padding: 6px 14px 4px; display: grid; gap: 4px; font-size: 14px; }
+.comments p { margin: 0; overflow-wrap: anywhere; }
+.comments .del-c { border: 0; background: none; color: var(--muted); cursor: pointer; font-size: 12px; padding: 0 4px; }
+.comments .linkish { justify-self: start; color: var(--muted); text-decoration: none; font-size: 14px; }
+.add-c { display: flex; gap: 8px; align-items: center; border-top: 1px solid var(--line); padding: 8px 14px; margin-top: 8px; }
+.add-c input { flex: 1; border: 0; background: none; padding: 6px 0; min-width: 0; }
+.add-c input:focus-visible { outline: none; }
+.add-c button { border: 0; background: none; color: var(--court); font-weight: 700; cursor: pointer; }
+.add-c button[disabled] { opacity: .4; cursor: default; }
+.profile { padding: 18px; display: grid; gap: 10px; justify-items: center; text-align: center; }
+.profile h3 { font-family: var(--font-display); font-size: 24px; margin: 0; }
+.stats { display: flex; gap: 22px; font-size: 13px; color: var(--muted); }
+.stats b { display: block; font-size: 18px; color: var(--ink); font-variant-numeric: tabular-nums; }
+.rail .card.pad { padding: 14px; display: grid; gap: 10px; }
+.rail h4 { margin: 0; font-size: 13px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
+.rail .chips-row { flex-wrap: wrap; }
+.menu-pop { position: absolute; right: 12px; top: 48px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; box-shadow: 0 8px 24px rgba(0,0,0,.18); z-index: 4; overflow: hidden; }
+.menu-pop button { display: block; width: 100%; border: 0; background: none; padding: 10px 16px; text-align: left; cursor: pointer; font-weight: 600; }
+.menu-pop button:hover { background: var(--soft); }
+.menu-pop .danger { color: var(--bad); }
+.post { position: relative; }
+.lightbox { position: fixed; inset: 0; background: rgba(0,0,0,.9); display: grid; place-items: center; z-index: 25; padding: 16px; cursor: zoom-out; }
 .lightbox img { max-width: 100%; max-height: 100%; border-radius: 6px; }
+.me-mobile { display: none; gap: 8px; align-items: center; padding: 8px 10px 8px 14px; }
+@media (max-width: 980px) { .me-mobile { display: flex; } }
+@media (min-width: 981px) { #feedChipsMobile { display: none; } }
 
 .modal-bg { position: fixed; inset: 0; background: color-mix(in srgb, var(--ink) 55%, transparent); display: grid; place-items: center; z-index: 20; padding: 16px; }
 .modal { background: var(--surface); border-radius: 14px; padding: 20px; width: min(420px, 100%); display: grid; gap: 12px; }
@@ -230,6 +291,10 @@ footer { font-size: 12.5px; color: var(--muted); padding-block: 0 32px; }
       <button class="pill" id="locBtn" type="button" title="Change location">
         <svg width="14" height="14" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 2a7 7 0 0 0-7 7c0 5.2 7 13 7 13s7-7.8 7-13a7 7 0 0 0-7-7zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5z"/></svg>
         <span id="locLabel">Set your location</span>
+      </button>
+      <button class="pill" id="themeBtn" type="button" title="Switch between light and dark mode">
+        <svg width="14" height="14" viewBox="0 0 24 24" aria-hidden="true" id="themeIcon"></svg>
+        <span id="themeLabel">Auto</span>
       </button>
       <button class="pill" id="nameBtn" type="button" title="Change your display name">
         <svg width="14" height="14" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 12a5 5 0 1 0 0-10 5 5 0 0 0 0 10zm0 2c-4.4 0-8 2.2-8 5v3h16v-3c0-2.8-3.6-5-8-5z"/></svg>
@@ -330,46 +395,62 @@ footer { font-size: 12.5px; color: var(--muted); padding-block: 0 32px; }
     </section>
 
     <section id="view-community" hidden>
-      <div class="comm">
-        <div class="list-head"><h2>Community</h2><span class="muted">Share games, photos and news with other players.</span></div>
-        <div id="commAuth" hidden>
-          <div class="auth-card">
-            <div class="auth-switch" role="tablist">
-              <button type="button" role="tab" data-auth="login" aria-selected="true">Log in</button>
-              <button type="button" role="tab" data-auth="signup" aria-selected="false">Sign up</button>
-            </div>
-            <p class="muted" style="margin:0" id="authLead">Log in to see and share posts. Finding and hosting games still works without an account.</p>
-            <form id="loginForm">
-              <label class="f">Email<input type="email" id="li-email" autocomplete="email" required></label>
-              <label class="f">Password<input type="password" id="li-pass" autocomplete="current-password" required></label>
-              <p class="form-err" id="li-err" hidden></p>
-              <div class="actions"><button class="btn primary" type="submit">Log in</button><button class="linkish" type="button" id="li-forgot">Forgot password?</button></div>
-            </form>
-            <form id="signupForm" hidden>
-              <label class="f">Name other players see<input type="text" id="su-name" maxlength="40" autocomplete="nickname" required></label>
-              <label class="f">Email<input type="email" id="su-email" autocomplete="email" required></label>
-              <label class="f">Password (at least 6 characters)<input type="password" id="su-pass" minlength="6" autocomplete="new-password" required></label>
-              <p class="form-err" id="su-err" hidden></p>
-              <div class="actions"><button class="btn primary" type="submit">Create account</button></div>
-            </form>
+      <div id="commAuth" class="auth-wrap" hidden>
+        <div class="auth-card">
+          <div class="hero">
+            <svg width="44" height="44" viewBox="0 0 34 34" aria-hidden="true"><circle cx="17" cy="17" r="15" fill="#d8e83a" stroke="#1b2a0a" stroke-width="1.5"/><g fill="#1b2a0a"><circle cx="12" cy="11" r="2"/><circle cx="21" cy="10" r="2"/><circle cx="25" cy="18" r="2"/><circle cx="17" cy="18" r="2"/><circle cx="9" cy="19" r="2"/><circle cx="13" cy="26" r="2"/><circle cx="21" cy="25" r="2"/></g></svg>
+            <h2>SportBuddy Community</h2>
+            <p class="muted" style="margin:0" id="authLead">Share photos from your games, find partners, and cheer on other players. Finding and hosting games still works without an account.</p>
           </div>
+          <div class="auth-switch" role="tablist">
+            <button type="button" role="tab" data-auth="login" aria-selected="true">Log in</button>
+            <button type="button" role="tab" data-auth="signup" aria-selected="false">Sign up</button>
+          </div>
+          <form id="loginForm">
+            <label class="f">Email<input type="email" id="li-email" autocomplete="email" required></label>
+            <label class="f">Password<input type="password" id="li-pass" autocomplete="current-password" required></label>
+            <p class="form-err" id="li-err" hidden></p>
+            <button class="btn primary" type="submit">Log in</button>
+            <button class="linkish" type="button" id="li-forgot" style="justify-self:center">Forgot password?</button>
+          </form>
+          <form id="signupForm" hidden>
+            <label class="f">Name other players see<input type="text" id="su-name" maxlength="40" autocomplete="nickname" required></label>
+            <label class="f">Email<input type="email" id="su-email" autocomplete="email" required></label>
+            <label class="f">Password (at least 6 characters)<input type="password" id="su-pass" minlength="6" autocomplete="new-password" required></label>
+            <p class="form-err" id="su-err" hidden></p>
+            <button class="btn primary" type="submit">Create account</button>
+          </form>
         </div>
-        <div id="commFeed" hidden>
-          <div class="me-bar"><span>Signed in as <b id="meName"></b></span><button class="linkish" type="button" id="logoutBtn">Log out</button></div>
-          <form class="composer" id="composer">
-            <label class="f" for="pc-text" style="position:absolute;left:-9999px">What's happening?</label>
-            <textarea id="pc-text" maxlength="2000" placeholder="Looking for a doubles partner Saturday? Share a photo from today's game…"></textarea>
+      </div>
+      <div id="commFeed" class="social" hidden>
+        <div class="feed">
+          <form class="composer card" id="composer">
+            <div class="top"><div class="av" id="meAv" aria-hidden="true"></div>
+              <textarea id="pc-text" rows="1" maxlength="2000" aria-label="Write a post" placeholder="What's on your mind?"></textarea></div>
             <div class="thumbs" id="pc-thumbs"></div>
             <div class="row">
-              <label class="btn" style="display:inline-flex;gap:6px;align-items:center"><svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M21 19V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2zM8.5 13.5l2.5 3 3.5-4.5 4.5 6H5l3.5-4.5z"/></svg>Photos<input type="file" id="pc-file" accept="image/*" multiple hidden></label>
-              <select id="pc-sport" aria-label="Sport (optional)"></select>
+              <label class="ghost" style="color:var(--ok)"><svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M21 19V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2zM8.5 13.5l2.5 3 3.5-4.5 4.5 6H5l3.5-4.5z"/></svg>Photo<input type="file" id="pc-file" accept="image/*" multiple hidden></label>
+              <select id="pc-sport" aria-label="Sport tag (optional)"></select>
               <span style="flex:1"></span>
               <span class="status" id="pc-status"></span>
-              <button class="btn primary" type="submit" id="pc-submit">Post</button>
+              <button class="btn primary" type="submit" id="pc-submit" style="border-radius:999px;padding:7px 18px">Post</button>
             </div>
           </form>
-          <div class="games" id="postList"></div>
+          <div class="me-mobile card"><div class="av sm" id="mobAv" aria-hidden="true"></div><b id="mobName" style="flex:1;min-width:0;overflow-wrap:anywhere"></b><button class="ghost" type="button" id="myPostsBtn2">My posts</button><button class="ghost" type="button" id="logoutBtn2">Log out</button></div>
+          <div class="chips-row" id="feedChipsMobile" role="group" aria-label="Filter posts by sport"></div>
+          <div class="filter-note card" id="filterNote" hidden></div>
+          <div class="feed" id="postList"></div>
         </div>
+        <aside class="rail">
+          <div class="card profile">
+            <div class="av lg" id="railAv" aria-hidden="true"></div>
+            <h3 id="meName"></h3>
+            <div class="stats"><div><b id="stPosts">0</b>posts</div><div><b id="stLikes">0</b>likes</div></div>
+            <div class="actions" style="justify-content:center"><button class="btn" type="button" id="myPostsBtn">My posts</button><button class="btn" type="button" id="logoutBtn">Log out</button></div>
+          </div>
+          <div class="card pad"><h4>Browse by sport</h4><div class="chips-row" id="feedChips" role="group" aria-label="Filter posts by sport"></div></div>
+          <p class="muted" style="font-size:12.5px;margin:0 4px">Only signed-in members can see posts. Double-tap a photo to like it.</p>
+        </aside>
       </div>
     </section>
   </div>
@@ -831,7 +912,7 @@ function renderMine() {
 function fillSportSelects() {
   const opts = SPORTS.map(s => `<option value="${s.id}">${esc(s.name)}</option>`).join("");
   $("#h-sport").innerHTML = opts; $("#p-sport").innerHTML = opts;
-  if (!$("#pc-sport").options.length) $("#pc-sport").innerHTML = `<option value="">No sport tag</option>` + opts;
+  if (!$("#pc-sport").options.length) $("#pc-sport").innerHTML = `<option value="">Tag a sport</option>` + opts;
   const s = state.sport !== "all" ? state.sport : "pickleball";
   $("#h-sport").value = s; $("#p-sport").value = s;
 }
@@ -1052,10 +1133,11 @@ $("#p-go").onclick = findPlaces;
 $("#p-sport").onchange = findPlaces;
 
 /* ---------- community (needs an account) ---------- */
-// Accounts use Firebase Authentication (email + password). Posts live in Firestore `posts`;
-// photos are shrunk in the browser and stored inside the post, so no paid file storage is needed.
-const comm = { user: null, unsub: null, posts: [], pics: [], started: false };
+// Accounts use Firebase Authentication (email + password). Posts live in Firestore `posts`, comments in
+// `posts/{id}/comments`. Photos are shrunk in the browser and stored inside the post, so no paid file storage is needed.
+const comm = { user: null, unsub: null, posts: [], pics: [], started: false, els: new Map(), cunsub: new Map(), comments: new Map(), open: new Set(), byUid: null, sport: "" };
 const fbReady = () => !!(window.firebase?.auth && firebase.apps.length);
+const posts = () => firebase.firestore().collection("posts");
 const AUTH_MSG = {
   "auth/invalid-credential": "That email and password don't match.",
   "auth/wrong-password": "That email and password don't match.",
@@ -1070,33 +1152,59 @@ const AUTH_MSG = {
 };
 const authMsg = e => AUTH_MSG[e?.code] || "Something went wrong. Please try again.";
 function showErr(id, msg) { const el = $(id); el.textContent = msg || ""; el.hidden = !msg; }
+const AV_COLORS = ["#1d5fbf", "#2f7d4a", "#a2620c", "#b3352b", "#6a3fb5", "#0e7c86", "#c2410c", "#4b5563"];
+function avColor(id) { let h = 0; for (const c of String(id)) h = (h * 31 + c.charCodeAt(0)) >>> 0; return AV_COLORS[h % AV_COLORS.length]; }
+function avatar(el, uid, name) { el.textContent = (String(name || "?").trim()[0] || "?").toUpperCase(); el.style.setProperty("--c", avColor(uid)); }
+const myName = () => comm.user?.displayName || comm.user?.email?.split("@")[0] || "";
+const ICON = {
+  heart: '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" d="M12 20.5s-7.5-4.6-9.3-9.2C1.4 8 3.5 4.5 7 4.5c2 0 3.6 1.1 5 3 1.4-1.9 3-3 5-3 3.5 0 5.6 3.5 4.3 6.8-1.8 4.6-9.3 9.2-9.3 9.2z"/></svg>',
+  heartOn: '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 20.5s-7.5-4.6-9.3-9.2C1.4 8 3.5 4.5 7 4.5c2 0 3.6 1.1 5 3 1.4-1.9 3-3 5-3 3.5 0 5.6 3.5 4.3 6.8-1.8 4.6-9.3 9.2-9.3 9.2z"/></svg>',
+  comment: '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" d="M20.5 11.5a8.5 8.5 0 0 1-12.6 7.4L3.5 20.5l1.6-4.2A8.5 8.5 0 1 1 20.5 11.5z"/></svg>',
+  more: '<svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="2" fill="currentColor"/><circle cx="12" cy="12" r="2" fill="currentColor"/><circle cx="19" cy="12" r="2" fill="currentColor"/></svg>',
+};
+
 function startCommunity() {
   if (comm.started) return;
   if (!fbReady()) { $("#commAuth").hidden = false; $("#authLead").textContent = "The Community tab can't connect right now. Reload the page to try again."; return; }
   comm.started = true;
+  renderFeedChips();
   firebase.auth().onAuthStateChanged(u => {
     comm.user = u;
     $("#commAuth").hidden = !!u; $("#commFeed").hidden = !u;
     if (comm.unsub) { comm.unsub(); comm.unsub = null; }
+    comm.cunsub.forEach(f => f()); comm.cunsub.clear(); comm.comments.clear(); comm.els.clear(); comm.open.clear();
+    $("#postList").innerHTML = "";
     if (!u) { comm.posts = []; $('[data-auth="login"]').click(); return; }
-    $("#meName").textContent = u.displayName || u.email;
     if (!state.me.name && u.displayName) { state.me.name = u.displayName; prefs.name = u.displayName; savePrefs(); renderHeader(); }
+    renderMe();
     $("#postList").innerHTML = `<p class="status">Loading posts…</p>`;
-    comm.unsub = firebase.firestore().collection("posts").orderBy("createdAt", "desc").limit(50).onSnapshot(snap => {
-      comm.posts = snap.docs.map(d => ({ ...d.data(), id: d.id })); renderPosts();
+    comm.unsub = posts().orderBy("createdAt", "desc").limit(50).onSnapshot(snap => {
+      comm.posts = snap.docs.map(d => ({ ...d.data(), id: d.id })); syncPosts();
     }, () => { $("#postList").innerHTML = `<div class="empty"><h3>Couldn't load posts</h3><p>Reload the page to try again.</p></div>`; });
   });
 }
+function renderMe() {
+  const u = comm.user; if (!u) return;
+  const n = myName();
+  $("#meName").textContent = n; $("#mobName").textContent = n;
+  ["#meAv", "#railAv", "#mobAv"].forEach(s => avatar($(s), u.uid, n));
+  $("#pc-text").placeholder = `What's on your mind, ${n.split(" ")[0]}?`;
+  const mine = comm.posts.filter(p => p.uid === u.uid);
+  $("#stPosts").textContent = mine.length;
+  $("#stLikes").textContent = mine.reduce((s, p) => s + (p.likes || []).length, 0);
+}
+
+/* sign up / log in */
 document.querySelectorAll("[data-auth]").forEach(b => b.onclick = () => {
   const signup = b.dataset.auth === "signup";
   document.querySelectorAll("[data-auth]").forEach(x => x.setAttribute("aria-selected", x === b));
   $("#loginForm").hidden = signup; $("#signupForm").hidden = !signup;
   showErr("#li-err"); showErr("#su-err");
-  (signup ? $("#su-name") : $("#li-email")).focus();
+  if (!$("#view-community").hidden) (signup ? $("#su-name") : $("#li-email")).focus();
 });
 $("#loginForm").addEventListener("submit", async e => {
   e.preventDefault(); showErr("#li-err");
-  const btn = e.submitter || $("#loginForm .btn.primary"); btn.disabled = true;
+  const btn = $("#loginForm .btn.primary"); btn.disabled = true;
   try { await firebase.auth().signInWithEmailAndPassword($("#li-email").value.trim(), $("#li-pass").value); $("#li-pass").value = ""; }
   catch (err) { showErr("#li-err", authMsg(err)); }
   btn.disabled = false;
@@ -1115,14 +1223,15 @@ $("#signupForm").addEventListener("submit", async e => {
   try {
     const cred = await firebase.auth().createUserWithEmailAndPassword($("#su-email").value.trim(), $("#su-pass").value);
     await cred.user.updateProfile({ displayName: name });
-    $("#meName").textContent = name; $("#su-pass").value = "";
+    renderMe(); $("#su-pass").value = "";
     toast(`Welcome, ${name}.`);
   } catch (err) { showErr("#su-err", authMsg(err)); }
   btn.disabled = false;
 });
-$("#logoutBtn").onclick = () => firebase.auth().signOut();
+$("#logoutBtn").onclick = $("#logoutBtn2").onclick = () => firebase.auth().signOut();
+$("#myPostsBtn").onclick = $("#myPostsBtn2").onclick = () => { comm.byUid = comm.byUid === comm.user?.uid ? null : comm.user?.uid; applyFilter(); };
 
-// Photos: up to 4 per post, resized so a whole post stays under Firestore's 1 MB document limit.
+/* composer: up to 4 photos, resized so a whole post stays under Firestore's 1 MB document limit */
 async function shrink(file, max, q) {
   const url = URL.createObjectURL(file);
   try {
@@ -1137,6 +1246,7 @@ function renderThumbs() {
   $("#pc-thumbs").innerHTML = comm.pics.map((p, i) => `<div class="thumb"><img src="${p.data}" alt=""><button type="button" data-rm="${i}" aria-label="Remove photo">×</button></div>`).join("");
 }
 $("#pc-thumbs").onclick = e => { const b = e.target.closest("[data-rm]"); if (b) { comm.pics.splice(+b.dataset.rm, 1); renderThumbs(); } };
+$("#pc-text").addEventListener("input", e => { e.target.style.height = "auto"; e.target.style.height = e.target.scrollHeight + "px"; });
 $("#pc-file").onchange = async e => {
   const files = [...e.target.files].filter(f => f.type.startsWith("image/")); e.target.value = "";
   const room = 4 - comm.pics.length;
@@ -1155,65 +1265,181 @@ $("#composer").addEventListener("submit", async e => {
   $("#pc-submit").disabled = true; $("#pc-status").textContent = "Posting…";
   try {
     let images = comm.pics.map(p => p.data);
-    // Shrink further if the photos together are too big for one post.
     for (const [max, q] of [[1024, 0.65], [800, 0.6], [640, 0.55]]) {
       if (images.reduce((n, s) => n + s.length, 0) < 900000) break;
       images = await Promise.all(comm.pics.map(p => shrink(p.file, max, q)));
     }
-    await firebase.firestore().collection("posts").add({
-      uid: u.uid, name: u.displayName || u.email.split("@")[0], text, images, sport: $("#pc-sport").value || "",
-      likes: [], createdAt: Date.now(),
-    });
-    $("#pc-text").value = ""; $("#pc-sport").value = ""; comm.pics = []; renderThumbs();
+    await posts().add({ uid: u.uid, name: myName(), text, images, sport: $("#pc-sport").value || "", likes: [], createdAt: Date.now() });
+    $("#pc-text").value = ""; $("#pc-text").style.height = ""; $("#pc-sport").value = ""; comm.pics = []; renderThumbs();
     $("#pc-status").textContent = "";
   } catch {
     $("#pc-status").textContent = "Couldn't post. Check your connection and try again.";
   }
   $("#pc-submit").disabled = false;
 });
+
+/* feed: each post keeps its own element, so typing a comment or swiping photos survives live updates */
 function ago(t) {
   const s = Math.max(0, (Date.now() - t) / 1000);
-  if (s < 60) return "just now"; if (s < 3600) return Math.floor(s / 60) + " min ago"; if (s < 86400) return Math.floor(s / 3600) + " h ago";
+  if (s < 60) return "just now"; if (s < 3600) return Math.floor(s / 60) + "m"; if (s < 86400) return Math.floor(s / 3600) + "h"; if (s < 604800) return Math.floor(s / 86400) + "d";
   return new Date(t).toLocaleDateString([], { month: "short", day: "numeric", year: new Date(t).getFullYear() === new Date().getFullYear() ? undefined : "numeric" });
 }
-function renderPosts() {
-  const me = comm.user?.uid;
-  if (!comm.posts.length) { $("#postList").innerHTML = `<div class="empty"><h3>No posts yet</h3><p>Be the first to say hi to other players.</p></div>`; return; }
-  $("#postList").innerHTML = comm.posts.map(p => {
-    const liked = (p.likes || []).includes(me), n = (p.likes || []).length, imgs = p.images || [], sp = p.sport ? sportById(p.sport) : null;
-    return `<article class="post" data-pid="${esc(p.id)}">
-      <div class="post-head"><div class="avatar" aria-hidden="true">${esc((p.name || "?").trim()[0]?.toUpperCase() || "?")}</div>
-        <div class="who-line"><b>${esc(p.name)}</b><span class="muted" style="font-size:13px">${ago(p.createdAt)}${sp ? " · " + esc(sp.name) : ""}</span></div></div>
-      ${p.text ? `<p class="post-text">${esc(p.text)}</p>` : ""}
-      ${imgs.length ? `<div class="pics${imgs.length === 1 ? " one" : ""}">${imgs.map(s => /^data:image\/(jpeg|png|webp);base64,/.test(s) ? `<img src="${s}" alt="Photo shared by ${esc(p.name)}" loading="lazy">` : "").join("")}</div>` : ""}
-      <div class="post-actions"><button class="btn like" type="button" data-like aria-pressed="${liked}">${liked ? "Liked" : "Like"}${n ? " · " + n : ""}</button>
-        ${p.uid === me ? `<button class="btn danger" type="button" data-del>Delete</button>` : ""}</div>
-    </article>`;
-  }).join("");
+const okImg = s => /^data:image\/(jpeg|png|webp);base64,/.test(s);
+function buildPost(p) {
+  const el = document.createElement("article"); el.className = "post card"; el.dataset.pid = p.id;
+  const imgs = (p.images || []).filter(okImg), sp = p.sport ? sportById(p.sport) : null;
+  el.innerHTML = `
+    <div class="post-head"><div class="av" aria-hidden="true"></div>
+      <div class="who-line"><button class="name-btn" type="button" data-user>${esc(p.name)}</button>
+        <div class="meta"><span data-ago>${ago(p.createdAt)}</span>${sp ? `<span class="sport-pill">${esc(sp.name)}</span>` : ""}</div></div>
+      ${p.uid === comm.user?.uid ? `<button class="more" type="button" data-menu aria-label="Post options">${ICON.more}</button>` : ""}</div>
+    ${p.text ? `<p class="post-text">${esc(p.text)}</p>` : ""}
+    ${imgs.length ? `<div class="media"><div class="slides">${imgs.map((s, i) => `<img src="${s}" alt="Photo ${i + 1} of ${imgs.length} shared by ${esc(p.name)}" loading="lazy" draggable="false">`).join("")}</div>${imgs.length > 1 ? `<span class="count">1/${imgs.length}</span>` : ""}</div>${imgs.length > 1 ? `<div class="dots">${imgs.map((_, i) => `<i${i ? "" : ' class="on"'}></i>`).join("")}</div>` : ""}` : ""}
+    <div class="bar"><button class="icon" type="button" data-like></button><button class="icon" type="button" data-cfocus aria-label="Comment">${ICON.comment}</button></div>
+    <div class="likes" data-likes></div>
+    <div class="comments" data-comments></div>
+    <form class="add-c" data-addc><div class="av sm" aria-hidden="true"></div><input type="text" maxlength="1000" placeholder="Add a comment…" aria-label="Add a comment"><button type="submit" disabled>Post</button></form>`;
+  avatar(el.querySelector(".post-head .av"), p.uid, p.name);
+  avatar(el.querySelector(".add-c .av"), comm.user.uid, myName());
+  const slides = el.querySelector(".slides");
+  if (slides && imgs.length > 1) slides.addEventListener("scroll", () => {
+    const i = Math.round(slides.scrollLeft / slides.clientWidth);
+    el.querySelector(".count").textContent = `${i + 1}/${imgs.length}`;
+    el.querySelectorAll(".dots i").forEach((d, k) => d.classList.toggle("on", k === i));
+  }, { passive: true });
+  const inp = el.querySelector(".add-c input"), sendBtn = el.querySelector(".add-c button");
+  inp.addEventListener("input", () => sendBtn.disabled = !inp.value.trim());
+  watchComments(p.id);
+  return el;
 }
-$("#postList").onclick = async e => {
-  const img = e.target.closest(".pics img");
-  if (img) { const lb = document.createElement("div"); lb.className = "lightbox"; lb.innerHTML = `<img src="${img.src}" alt="">`; lb.onclick = () => lb.remove(); document.body.appendChild(lb); return; }
+function updatePost(el, p) {
+  const likes = p.likes || [], liked = likes.includes(comm.user?.uid), b = el.querySelector("[data-like]");
+  if (b.dataset.state !== String(liked)) {
+    b.dataset.state = liked; b.className = "icon" + (liked ? " liked" : ""); b.innerHTML = liked ? ICON.heartOn : ICON.heart;
+    b.setAttribute("aria-label", liked ? "Unlike" : "Like"); b.setAttribute("aria-pressed", liked);
+  }
+  el.querySelector("[data-likes]").textContent = likes.length ? `${likes.length} ${likes.length === 1 ? "like" : "likes"}` : "";
+  el.querySelector("[data-ago]").textContent = ago(p.createdAt);
+}
+function syncPosts() {
+  const list = $("#postList");
+  if (!comm.posts.length) { list.innerHTML = `<div class="empty"><h3>No posts yet</h3><p>Be the first to say hi to other players.</p></div>`; comm.els.clear(); renderMe(); return; }
+  list.querySelectorAll(":scope > :not(.post)").forEach(n => n.remove());
+  const ids = new Set(comm.posts.map(p => p.id));
+  for (const [id, el] of comm.els) if (!ids.has(id)) { el.remove(); comm.els.delete(id); comm.cunsub.get(id)?.(); comm.cunsub.delete(id); }
+  let prev = null;
+  for (const p of comm.posts) {
+    let el = comm.els.get(p.id);
+    if (!el) { el = buildPost(p); comm.els.set(p.id, el); }
+    updatePost(el, p);
+    const want = prev ? prev.nextSibling : list.firstChild;
+    if (want !== el) list.insertBefore(el, want);
+    prev = el;
+  }
+  applyFilter(); renderMe();
+}
+function applyFilter() {
+  for (const p of comm.posts) {
+    const el = comm.els.get(p.id); if (!el) continue;
+    el.hidden = (comm.byUid && p.uid !== comm.byUid) || (comm.sport && p.sport !== comm.sport);
+  }
+  const note = $("#filterNote"), who = comm.byUid && (comm.byUid === comm.user?.uid ? "you" : comm.posts.find(p => p.uid === comm.byUid)?.name);
+  const parts = [who ? `posts by ${esc(who)}` : "", comm.sport ? `${esc(sportById(comm.sport).name)} posts` : ""].filter(Boolean);
+  note.hidden = !parts.length;
+  if (parts.length) {
+    const shown = comm.posts.filter(p => !comm.els.get(p.id)?.hidden).length;
+    note.innerHTML = `<span style="flex:1">Showing ${parts.join(", ")}${shown ? "" : ". Nothing here yet"}.</span><button class="linkish" type="button" id="clearFilter">Show everything</button>`;
+    $("#clearFilter").onclick = () => { comm.byUid = null; comm.sport = ""; renderFeedChips(); applyFilter(); };
+  }
+  $("#myPostsBtn").textContent = $("#myPostsBtn2").textContent = comm.byUid === comm.user?.uid ? "All posts" : "My posts";
+}
+function renderFeedChips() {
+  const html = [{ id: "", name: "All" }, ...SPORTS].map(s => `<button class="chip" type="button" data-fsport="${s.id}" aria-pressed="${comm.sport === s.id}">${esc(s.name)}</button>`).join("");
+  $("#feedChips").innerHTML = html; $("#feedChipsMobile").innerHTML = html;
+}
+$("#commFeed").addEventListener("click", e => {
+  const c = e.target.closest("[data-fsport]"); if (!c) return;
+  comm.sport = c.dataset.fsport; renderFeedChips(); applyFilter();
+});
+
+/* comments */
+function watchComments(pid) {
+  if (comm.cunsub.has(pid)) return;
+  comm.cunsub.set(pid, posts().doc(pid).collection("comments").orderBy("createdAt").limit(200).onSnapshot(snap => {
+    comm.comments.set(pid, snap.docs.map(d => ({ ...d.data(), id: d.id }))); renderComments(pid);
+  }, () => {}));
+}
+function renderComments(pid) {
+  const el = comm.els.get(pid); if (!el) return;
+  const all = comm.comments.get(pid) || [], open = comm.open.has(pid), post = comm.posts.find(p => p.id === pid), me = comm.user?.uid;
+  const shown = open ? all : all.slice(-2);
+  el.querySelector("[data-comments]").innerHTML =
+    (all.length > 2 && !open ? `<button class="linkish" type="button" data-allc>View all ${all.length} comments</button>` : "") +
+    shown.map(c => `<p><button class="name-btn" type="button" data-cuser="${esc(c.uid)}">${esc(c.name)}</button> ${esc(c.text)}${c.uid === me || post?.uid === me ? ` <button class="del-c" type="button" data-delc="${esc(c.id)}" aria-label="Delete comment">Delete</button>` : ""}</p>`).join("");
+}
+async function toggleLike(pid, onlyLike) {
+  const p = comm.posts.find(x => x.id === pid), uid = comm.user?.uid; if (!p || !uid) return;
+  const liked = (p.likes || []).includes(uid); if (onlyLike && liked) return;
+  const F = firebase.firestore.FieldValue;
+  try { await posts().doc(pid).update({ likes: liked ? F.arrayRemove(uid) : F.arrayUnion(uid) }); }
+  catch { toast("That didn't save. Check your connection and try again."); }
+}
+let lastTap = 0;
+$("#postList").addEventListener("click", async e => {
   const card = e.target.closest("[data-pid]"); if (!card || !comm.user) return;
-  const ref = firebase.firestore().collection("posts").doc(card.dataset.pid), uid = comm.user.uid;
-  try {
-    if (e.target.closest("[data-like]")) {
-      const p = comm.posts.find(x => x.id === card.dataset.pid);
-      const F = firebase.firestore.FieldValue;
-      await ref.update({ likes: (p?.likes || []).includes(uid) ? F.arrayRemove(uid) : F.arrayUnion(uid) });
-    } else if (e.target.closest("[data-del]")) {
-      const b = e.target.closest("[data-del]");
-      if (!b.dataset.confirm) { b.dataset.confirm = "1"; b.textContent = "Tap again to delete"; setTimeout(() => { if (b.isConnected) { delete b.dataset.confirm; b.textContent = "Delete"; } }, 4000); return; }
-      await ref.delete(); toast("Post deleted.");
+  const pid = card.dataset.pid, p = comm.posts.find(x => x.id === pid);
+  const img = e.target.closest(".slides img");
+  if (img) {
+    // Double-tap likes (like Instagram); a single tap opens the photo full size.
+    const now = Date.now();
+    if (now - lastTap < 320) {
+      clearTimeout(img._t); lastTap = 0; toggleLike(pid, true);
+      const burst = document.createElement("div"); burst.className = "burst"; burst.innerHTML = ICON.heartOn;
+      card.querySelector(".media").appendChild(burst); setTimeout(() => burst.remove(), 850);
+    } else {
+      lastTap = now;
+      img._t = setTimeout(() => { const lb = document.createElement("div"); lb.className = "lightbox"; lb.innerHTML = `<img src="${img.src}" alt="">`; lb.onclick = () => lb.remove(); document.body.appendChild(lb); }, 330);
     }
-  } catch { toast("That didn't save. Check your connection and try again."); }
-};
-setInterval(() => { if (state.view === "community" && comm.posts.length) renderPosts(); }, 60000);
+    return;
+  }
+  if (e.target.closest("[data-like]")) return toggleLike(pid);
+  if (e.target.closest("[data-cfocus]")) return card.querySelector(".add-c input").focus();
+  if (e.target.closest("[data-allc]")) { comm.open.add(pid); return renderComments(pid); }
+  const u = e.target.closest("[data-user], [data-cuser]");
+  if (u) { comm.byUid = u.dataset.cuser || p?.uid; applyFilter(); window.scrollTo({ top: 0, behavior: "smooth" }); return; }
+  const dc = e.target.closest("[data-delc]");
+  if (dc) { try { await posts().doc(pid).collection("comments").doc(dc.dataset.delc).delete(); } catch { toast("Couldn't delete that comment."); } return; }
+  if (e.target.closest("[data-menu]")) {
+    const old = card.querySelector(".menu-pop"); if (old) { old.remove(); return; }
+    const m = document.createElement("div"); m.className = "menu-pop";
+    m.innerHTML = `<button type="button" class="danger" data-delpost>Delete post</button><button type="button" data-closemenu>Cancel</button>`;
+    card.appendChild(m); return;
+  }
+  if (e.target.closest("[data-closemenu]")) return card.querySelector(".menu-pop")?.remove();
+  if (e.target.closest("[data-delpost]")) {
+    card.querySelector(".menu-pop")?.remove();
+    try {
+      for (const c of comm.comments.get(pid) || []) await posts().doc(pid).collection("comments").doc(c.id).delete().catch(() => {});
+      await posts().doc(pid).delete(); toast("Post deleted.");
+    } catch { toast("Couldn't delete the post. Try again."); }
+  }
+});
+$("#postList").addEventListener("submit", async e => {
+  const f = e.target.closest("[data-addc]"); if (!f) return;
+  e.preventDefault();
+  const pid = f.closest("[data-pid]").dataset.pid, inp = f.querySelector("input"), text = inp.value.trim();
+  if (!text || !comm.user) return;
+  f.querySelector("button").disabled = true;
+  try { await posts().doc(pid).collection("comments").add({ uid: comm.user.uid, name: myName(), text, createdAt: Date.now() }); inp.value = ""; comm.open.add(pid); }
+  catch { toast("Couldn't post your comment. Try again."); f.querySelector("button").disabled = false; }
+});
+setInterval(() => { if (state.view === "community") for (const p of comm.posts) { const el = comm.els.get(p.id); if (el) el.querySelector("[data-ago]").textContent = ago(p.createdAt); } }, 60000);
 
 /* ---------- views ---------- */
 function setView(v) {
   state.view = v;
   document.querySelectorAll(".tab").forEach(t => t.setAttribute("aria-selected", t.dataset.view === v));
+  $(`.tab[data-view="${v}"]`).scrollIntoView({ block: "nearest", inline: "nearest" });
   ["find", "host", "places", "mine", "community"].forEach(x => $("#view-" + x).hidden = x !== v);
   $("#sportChips").hidden = v === "host" || v === "places" || v === "mine" || v === "community";
   if (v === "community") startCommunity();
@@ -1232,6 +1458,26 @@ listeners.add(render);
 listeners.add(showInvite);
 readInvite();
 window.addEventListener("hashchange", () => { readInvite(); showInvite(); });
+
+// Theme: Auto follows the device; Light and Dark override it and are remembered in this browser.
+const THEME_ICON = {
+  auto: '<path fill="currentColor" d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm0 2v16a8 8 0 0 1 0-16z"/>',
+  light: '<circle cx="12" cy="12" r="5" fill="currentColor"/><g stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 1.5v2.5M12 20v2.5M1.5 12H4M20 12h2.5M4.6 4.6l1.8 1.8M17.6 17.6l1.8 1.8M4.6 19.4l1.8-1.8M17.6 6.4l1.8-1.8"/></g>',
+  dark: '<path fill="currentColor" d="M20.5 14.5A8.5 8.5 0 0 1 9.5 3.5a8.5 8.5 0 1 0 11 11z"/>',
+};
+function applyTheme() {
+  const t = prefs.theme === "light" || prefs.theme === "dark" ? prefs.theme : "auto";
+  if (t === "auto") delete document.documentElement.dataset.theme; else document.documentElement.dataset.theme = t;
+  $("#themeIcon").innerHTML = THEME_ICON[t];
+  $("#themeLabel").textContent = { auto: "Auto", light: "Light", dark: "Dark" }[t];
+  $("#themeBtn").setAttribute("aria-label", `Theme: ${$("#themeLabel").textContent}. Tap to change.`);
+}
+$("#themeBtn").onclick = () => {
+  const order = ["auto", "light", "dark"], cur = order.includes(prefs.theme) ? prefs.theme : "auto";
+  prefs.theme = order[(order.indexOf(cur) + 1) % 3]; savePrefs(); applyTheme();
+  toast({ auto: "Theme follows your device.", light: "Light mode on.", dark: "Dark mode on." }[prefs.theme]);
+};
+applyTheme();
 
 $("#locBtn").onclick = () => manualLoc();
 $("#nameBtn").onclick = () => askName();
